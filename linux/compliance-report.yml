@@ -50,7 +50,7 @@
         path: '{{ _report }}'
         owner: root
         group: root
-        mode: 0644
+        mode: 0777
 
     - name: Create ServiceNow Incident
       servicenow.itsm.incident:
