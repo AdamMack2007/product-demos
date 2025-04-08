@@ -9,7 +9,6 @@
       - openscap-utils
       - scap-security-guide
     compliance_profile: ospp
-    use_httpd: true
 
   tasks:
     - name: Get our facts straight
@@ -21,15 +20,6 @@
       ansible.builtin.dnf:
         name: '{{ openscap_packages }}'
         state: present
-
-    - name: Configure httpd
-      when: use_httpd | bool
-      block:
-        - name: Install httpd
-          ansible.builtin.dnf:
-            name: httpd
-            state: present
-          notify: Restart httpd
 
         - name: Override report directory
           ansible.builtin.set_fact:
@@ -80,11 +70,16 @@
         group: root
         mode: 0644
 
-  handlers:
-    - name: Restart httpd
-      ansible.builtin.service:
-        name: httpd
-        state: restarted
-        enabled: true
+    - name: Create ServiceNow Incident
+      servicenow.itsm.incident:
+        instance: "{{ snow_instance }}"
+        short_description: "{{ inventory_hostname }} OpenSCAP report"
+        caller: amack
+        state: new
+        impact: low
+        urgency: low
+        attachments:
+          - path: "{{ _report }}"
+      delegate_to: localhost
 
 ...
