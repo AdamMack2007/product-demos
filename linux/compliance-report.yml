@@ -50,7 +50,12 @@
         path: '{{ _report }}'
         owner: root
         group: root
-        mode: 0777
+        mode: 0644
+
+    - name: Copy File to Localhost
+      ansible.builtin.copy:
+        src: "{{ _report }}"
+        dest: "/tmp/{{ inventory_hostname }}-ospp.html"
 
     - name: Create ServiceNow Incident
       servicenow.itsm.incident:
