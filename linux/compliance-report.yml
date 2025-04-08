@@ -53,7 +53,7 @@
         mode: 0644
 
     - name: Copy File to Localhost
-      ansible.builtin.copy:
+      ansible.builtin.fetch:
         src: "{{ _report }}"
         dest: "/tmp/{{ inventory_hostname }}-ospp.html"
 
@@ -66,7 +66,7 @@
         impact: low
         urgency: low
         attachments:
-          - path: "{{ _report }}"
+          - path: "/tmp/{{ inventory_hostname }}-ospp.html"
       delegate_to: localhost
 
 ...
