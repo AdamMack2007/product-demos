@@ -1,6 +1,6 @@
 ---
 - name: Join Active Directory domain
-  hosts: "{{ _hosts | default('all') }}"
+  hosts: all
   gather_facts: false
 
   tasks:
