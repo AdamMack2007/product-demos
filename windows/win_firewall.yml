@@ -5,7 +5,7 @@
 
     - name: Start firewall service
       ansible.windows.win_service:
-        name: W3SVC
+        name: mpssvc
         state: started
 
     - name: Enable Windows firewall
