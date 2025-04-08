@@ -3,11 +3,6 @@
   gather_facts: false
   tasks:
 
-    - name: Start firewall service
-      ansible.windows.win_service:
-        name: mpssvc
-        state: started
-
     - name: Enable Windows firewall
       ansible.windows.win_firewall:
         state: enabled
