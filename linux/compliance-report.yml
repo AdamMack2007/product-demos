@@ -56,6 +56,7 @@
       ansible.builtin.fetch:
         src: "{{ _report }}"
         dest: "/tmp/{{ inventory_hostname }}-ospp.html"
+        flat: yes
 
     - name: Create ServiceNow Incident
       servicenow.itsm.incident:
