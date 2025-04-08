@@ -21,10 +21,6 @@
         name: '{{ openscap_packages }}'
         state: present
 
-    - name: Override report directory
-      ansible.builtin.set_fact:
-        _report_dir: /var/www/html/oscap-reports
-
     - name: Gather service facts
       ansible.builtin.service_facts:
 
