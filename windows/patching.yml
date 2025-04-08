@@ -1,8 +1,8 @@
 ---
 - name: Windows updates
-  hosts: "{{ _hosts | default('os_windows') }}"
+  hosts: all
   vars:
-    report_server: aws_win1
+    report_server: patch_report
 
   tasks:
 
