@@ -2,7 +2,7 @@
 - name: Windows updates
   hosts: all
   vars:
-    report_server: patch_report
+    report_server: web4
 
   tasks:
 
