@@ -1,0 +1,24 @@
+- hosts: proxmox
+  gather_facts: false
+  connection: local
+
+  vars:
+    windows_vms:
+      - node: pve2
+        name: win2
+      - node: pve3
+        name: win1
+      - node: pve3
+        name: dc2
+    
+
+  tasks:
+    - name: "Windows VMs - {{ lab_action | capitalize }}"
+      community.general.proxmox_kvm:
+        api_user: root@pam
+        api_password: "{{ api_password }}"
+        api_host: pve1.mackdev.net
+        name: "{{ item.name }}"
+        node: "{{ item.node }}"
+        state: "{{ lab_action }}"
+      loop: "{{ windows_vms }}"
