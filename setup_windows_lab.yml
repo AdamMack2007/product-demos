@@ -15,8 +15,8 @@
   tasks:
     - name: "Windows VMs - {{ lab_action | capitalize }}"
       community.general.proxmox_kvm:
-        api_user: root@pam
-        api_password: "{{ api_password }}"
+        api_user: "{{ lookup('ansible.builtin.env', 'api_user')}}"
+        api_password: "{{ lookup('ansible.builtin.env', 'api_password')}}"
         api_host: pve1.mackdev.net
         name: "{{ item.name }}"
         node: "{{ item.node }}"
