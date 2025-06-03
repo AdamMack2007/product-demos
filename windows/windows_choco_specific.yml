@@ -1,6 +1,6 @@
 ---
 - name: Chocolatey install specific
-  hosts: "{{ _hosts | default('os_windows') }}"
+  hosts: all
   gather_facts: false
 
   tasks:
