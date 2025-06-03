@@ -1,9 +1,9 @@
-- name: Enable Windows Firewall
+- name: Configure Windows Firewall
   hosts: all
   gather_facts: false
   tasks:
 
-    - name: Enable Windows firewall
+    - name: Configure Windows firewall
       ansible.windows.win_firewall:
         state: enabled
         profiles:
