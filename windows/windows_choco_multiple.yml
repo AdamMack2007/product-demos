@@ -14,7 +14,7 @@
         name: "{{ item }}"
         state: "{{ package_state | default('present') }}"
       loop: "{{ choco_packages }}"
-      when: choco_packages is defined
+      when: snow_choco_packages is not defined
     
 
     - name: Install specific versions of packages sequentially
