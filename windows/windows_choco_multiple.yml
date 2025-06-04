@@ -4,6 +4,11 @@
   gather_facts: false
 
   tasks:
+    - name: Set ServiceNow request as list
+      set_fact:
+        choco_packages: "{{ selected_apps | split(',') }}"
+      when: selected_apps is defined
+
     - name: Install specific versions of packages sequentially
       chocolatey.chocolatey.win_chocolatey:
         name: "{{ item }}"
