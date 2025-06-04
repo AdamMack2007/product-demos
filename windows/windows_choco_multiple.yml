@@ -6,11 +6,11 @@
   tasks:
     - name: Set ServiceNow request as list
       set_fact:
-        choco_packages: "{{ ansible_eda.event.payload.selected_apps | split(',') | trim }}"
+        choco_packages: "{{ ansible_eda.event.payload.selected_apps.split(',') }}"
       when: ansible_eda.event.payload.selected_apps is defined
 
     - name: Install specific versions of packages sequentially
       chocolatey.chocolatey.win_chocolatey:
-        name: "{{ item }}"
+        name: "{{ item | trim }}"
         state: "{{ package_state | default('present') }}"
       loop: "{{ choco_packages }}"
