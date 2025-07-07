@@ -7,6 +7,10 @@
         msg: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/aap:READ_ME') }}"
       register: secret_output
 
-    - name: Debug Credentials
+    - name: Debug "Username
       ansible.builtin.debug:
-        msg: "Username: {{ ansible_user }}\nPassword: {{ ansible_password }}"
+        msg: "Username: {{ ansible_user }}"
+
+    - name: Debug Password
+      ansible.builtin.debug:
+        msg: "Password: {{ ansible_password }}"
