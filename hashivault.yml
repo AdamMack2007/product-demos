@@ -1,0 +1,8 @@
+- name: Example Hashi Valt lookup
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Lookup secret from Hashi Valt
+      ansible.builtin.debug:
+        msg: "{{ lookup('hashivault', 'secret/data/aap:READ_ME') }}"
+      register: secret_output
