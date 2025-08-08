@@ -1,8 +1,14 @@
 ---
 - name: Update SNOW
-  hosts: all
+  hosts: localhost
   gather_facts: no
   tasks:
+
+
+    - name: Set variables
+      set_fact:
+        ritm: "{{ ansible_eda.event.payload.ritm }}"
+      when: ansible_eda is defined
 
     - name: Update a Change Request
       servicenow.servicenow.snow_record:
