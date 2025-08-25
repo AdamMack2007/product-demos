@@ -1,0 +1,15 @@
+- name: >
+    Download OneAgent installer and install OneAgent on Windows machines
+  hosts: all
+  vars:
+    oneagent_paas_token: "{{ dynatrace_token }}"
+    oneagent_environment_url: "{{ dynatrace_url }}"
+    oneagent_install_args:
+      - INSTALL_PATH=/opt/example
+      - GROUP=example_group
+      - --set-host-name="{{ inventory_hostname }}"
+      - --set-host-tag=windows
+  tasks:
+    - name: Import Dynatrace OneAgent role
+      ansible.builtin.import_role:
+        name: dynatrace.oneagent.oneagent
