@@ -9,7 +9,6 @@
       ansible.windows.win_get_url:
         url: "{{ oneagent_environment_url }}/api/v1/deployment/installer/agent/windows/default/latest"
         dest: C:\Temp\Dynatrace-OneAgent-Windows.exe
-        mode: '0755'
         headers:
           Authorization: "Api-Token {{ dynatrace_token }}"
     
