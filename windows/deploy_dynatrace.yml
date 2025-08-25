@@ -4,11 +4,6 @@
   vars:
     oneagent_paas_token: "{{ dynatrace_token }}"
     oneagent_environment_url: "{{ dynatrace_url }}"
-    oneagent_install_args:
-      - INSTALL_PATH=/opt/example
-      - GROUP=example_group
-      - --set-host-name="{{ inventory_hostname }}"
-      - --set-host-tag=windows
   tasks:
     - name: Get Dynatrace App
       ansible.builtin.get_url:
