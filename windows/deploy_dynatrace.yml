@@ -10,6 +10,14 @@
       - --set-host-name="{{ inventory_hostname }}"
       - --set-host-tag=windows
   tasks:
+    - name: Get Dynatrace App
+      ansible.builtin.get_url:
+        url: "{{ oneagent_environment_url }}/api/v1/deployment/installer/agent/windows/default/latest?Api-Token={{ oneagent_paas_token }}"
+        dest: C:\Temp\Dynatrace-OneAgent-Windows.exe
+        mode: '0755'
+        headers:
+          Authorization: "Api-Token {{ dynatrace_token }}"
+    
     - name: Import Dynatrace OneAgent role
       ansible.builtin.import_role:
         name: dynatrace.oneagent.oneagent
