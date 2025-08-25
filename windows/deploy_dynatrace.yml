@@ -6,7 +6,7 @@
     oneagent_environment_url: "{{ dynatrace_url }}"
   tasks:
     - name: Get Dynatrace App
-      ansible.builtin.get_url:
+      ansible.windows.win_get_url:
         url: "{{ oneagent_environment_url }}/api/v1/deployment/installer/agent/windows/default/latest"
         dest: C:\Temp\Dynatrace-OneAgent-Windows.exe
         mode: '0755'
