@@ -1,17 +1,9 @@
 - name: >
     Download OneAgent installer and install OneAgent on Windows machines
   hosts: all
-  vars:
-    oneagent_paas_token: "{{ dynatrace_token }}"
-    oneagent_environment_url: "{{ dynatrace_url }}"
-  tasks:
-    - name: Get Dynatrace App
-      ansible.windows.win_get_url:
-        url: "https://ozi92582.live.dynatrace.com/api/v1/deployment/installer/agent/windows/default/latest?arch=x86"
-        dest: C:\Temp\Dynatrace-OneAgent-Windows.exe
-        headers:
-          Authorization: "Api-Token {{ dynatrace_token }}"
-    
-    - name: Import Dynatrace OneAgent role
-      ansible.builtin.import_role:
-        name: dynatrace.oneagent.oneagent
+  
+  roles:
+    - role: dynatrace.oneagent.oneagent
+      vars:
+        oneagent_paas_token: "{{ dynatrace_token }}"
+        oneagent_environment_url: "{{ dynatrace_url }}"
