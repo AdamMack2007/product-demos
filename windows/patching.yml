@@ -36,6 +36,7 @@
             color: "#3498db"
             pretext: "Ansible Playbook: {{ inventory_hostname }} Report"
             text: "{{ html_content.content | b64decode }}"
+        validate_certs: no
       delegate_to: localhost
 
     #- name: Send report to Mattermost 
