@@ -19,32 +19,3 @@
         dest: "/tmp/{{ inventory_hostname }}_windowspatch.html"
         flat: yes
       delegate_to: "{{ inventory_hostname }}"
-
-    - name: Read HTML file content
-      ansible.builtin.slurp:
-        src: "/tmp/{{ inventory_hostname }}_windowspatch.html"
-      register: html_content
-      delegate_to: localhost
-
-    - name: Send HTML content to Mattermost as an attachment
-      community.general.mattermost:
-        url: "{{ mattermost_url }}"
-        channel: "device-info" 
-        api_key: "{{ mattermost_token }}"
-        attachments:
-          - fallback: "HTML report attached"
-            color: "#3498db"
-            pretext: "Ansible Playbook: {{ inventory_hostname }} Report"
-            text: "{{ html_content.content | b64decode }}"
-        validate_certs: no
-      delegate_to: localhost
-
-    #- name: Send report to Mattermost 
-    #  community.general.mattermost:
-    #    url: "{{ mattermost_url}}"
-    #    api_key: "{{ mattermost_token }}"
-    #    channel: device-info
-    #    text: "Windows patching report for {{ inventory_hostname }}"
-    #    attachments:
-    #      - "/tmp/{{ inventory_hostname }}_windowspatch.html"
-    #  delegate_to: localhost

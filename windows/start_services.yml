@@ -1,0 +1,7 @@
+- name: Start Services
+  hosts: all
+  tasks:
+    - name: Start IIS World Wide Web Publishing Service
+      ansible.windows.win_service:
+        name: W3SVC
+        state: started
