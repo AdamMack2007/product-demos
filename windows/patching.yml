@@ -15,7 +15,7 @@
 
     - name: Fetch report
       ansible.builtin.fetch:
-        src: "C:\Temp\windowspatch.html"
+        src: "C:\\Temp\\windowspatch.html"
         dest: "/tmp/{{ inventory_hostname }}_windowspatch.html"
         flat: yes
       delegate_to: "{{ inventory_hostname }}"
