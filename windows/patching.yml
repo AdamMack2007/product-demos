@@ -11,10 +11,7 @@
 
     - name: Build report server
       ansible.builtin.include_role:
-        name: "{{ item }}"
-      loop:
-        - demo.patching.report_windows
-        - demo.patching.report_windows_patching
+        name: demo.patching.report_windows_patching        
 
     - name: Send report to Mattermost 
       community.general.mattermost:
