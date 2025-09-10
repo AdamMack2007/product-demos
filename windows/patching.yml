@@ -15,3 +15,12 @@
       loop:
         - demo.patching.report_windows
         - demo.patching.report_windows_patching
+
+    - name: Send report to Mattermost 
+      community.general.mattermost:
+        url: "{{ mattermost_url}}"
+        api_key: "{{ mattermost_token }}"
+        channel: device-info
+        text: "Windows patching report for {{ inventory_hostname }}"
+        attachments:
+          - C:\Temp\windowspatch.html
