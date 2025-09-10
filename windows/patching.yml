@@ -28,4 +28,4 @@
         text: "Windows patching report for {{ inventory_hostname }}"
         attachments:
           - "/tmp/{{ inventory_hostname }}_windowspatch.html"
-        delegate_to: localhost
+      delegate_to: localhost
