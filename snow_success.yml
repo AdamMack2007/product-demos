@@ -9,6 +9,7 @@
       set_fact:
         ritm: "{{ ansible_eda.event.payload.ritm }}"
       when: ansible_eda is defined
+      run_once: true
 
     - name: Update a Change Request
       servicenow.servicenow.snow_record:
