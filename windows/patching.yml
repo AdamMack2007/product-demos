@@ -11,7 +11,14 @@
 
     - name: Build report server
       ansible.builtin.include_role:
-        name: demo.patching.report_windows_patching        
+        name: demo.patching.report_windows_patching      
+
+    - name: Fetch report
+      ansible.builtin.fetch:
+        src: "C:\Temp\windowspatch.html"
+        dest: "/tmp/{{ inventory_hostname }}_windowspatch.html"
+        flat: yes
+      delegate_to: "{{ inventory_hostname }}"
 
     - name: Send report to Mattermost 
       community.general.mattermost:
@@ -20,4 +27,4 @@
         channel: device-info
         text: "Windows patching report for {{ inventory_hostname }}"
         attachments:
-          - C:\Temp\windowspatch.html
+          - "/tmp/{{ inventory_hostname }}_windowspatch.html"
