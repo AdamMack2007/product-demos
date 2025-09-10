@@ -29,7 +29,7 @@
     - name: Send HTML content to Mattermost as an attachment
       community.general.mattermost:
         url: "{{ mattermost_url }}"
-        channel: "{{ mattermost_channel }}"
+        channel: "device-info" 
         api_key: "{{ mattermost_token }}"
         attachments:
           - fallback: "HTML report attached"
