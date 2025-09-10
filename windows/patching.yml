@@ -8,6 +8,7 @@
     - name: Patch windows server
       ansible.builtin.include_role:
         name: demo.patching.patch_windows
+      check_mode: true
 
     - name: Build report server
       ansible.builtin.include_role:
