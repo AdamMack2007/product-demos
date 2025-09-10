@@ -1,0 +1,16 @@
+- name: Test Application and make sure its working.
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Test App Block
+      block:
+        - name: Test application with URI
+          ansible.windows.win_uri:
+            url: http://localhost/index.html
+          register: app_test
+        
+      rescue:
+        - name: Save error message on failure
+          set_stats:
+            data:
+              error_msg: "{{ app_test }}"
