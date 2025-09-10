@@ -1,5 +1,6 @@
 - name: Stop Services
   hosts: all
+  gather_facts: no
   tasks:
     - name: Stop IIS World Wide Web Publishing Service
       ansible.windows.win_service:

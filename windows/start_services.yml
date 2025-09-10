@@ -1,5 +1,6 @@
 - name: Start Services
   hosts: all
+  gather_facts: no
   tasks:
     - name: Start IIS World Wide Web Publishing Service
       ansible.windows.win_service:
