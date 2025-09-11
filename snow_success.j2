@@ -1,7 +1,7 @@
 Server configured successfully!
 
-Name: {{ ansible_eda.event.payload.servers }}
-
+Name: {{ ansible_eda.event.payload.servers | default(ansible_eda.event.payload.server_name) }}
+{% if ansible_eda.event.payload.domain_join_name is defined %}
 Domain Joined: {{ ansible_eda.event.payload.domain_join_name }}
-
+{% endif %}
 Packages updated: {{ ansible_eda.event.payload.selected_apps }}
