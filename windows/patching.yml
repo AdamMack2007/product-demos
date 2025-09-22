@@ -30,6 +30,7 @@
         sysparm_query: number={{ ritm }}
         columns: [sys_id]
       when: ritm is defined
+      delegate_to: localhost
 
     - name: Add a comment and attachment to the request
       vars: { sys_id: "{{ request_item.record[0].sys_id }}" }
