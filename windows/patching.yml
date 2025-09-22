@@ -51,6 +51,7 @@
         attachment: /tmp/{{ inventory_hostname }}_windowspatch.html
       delegate_to: localhost
       when: ritm is defined
+      failed_when: false
 
     #- name: "Attach output CSV file to incident"
     #  ansible.builtin.uri:
