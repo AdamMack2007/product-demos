@@ -53,12 +53,9 @@
             Content-Type: "text/html"
             Content-Transfer-Encoding: "utf-8"
         body:
-          table_name:
-              content: sc_req_item
-          table_sys_id:
-              content: '{{ sys_id }}'
-          uploadFile:
-              filename: "/tmp/{{ inventory_hostname }}_windowspatch.html"
+          table_name: sc_req_item
+          table_sys_id: '{{ sys_id }}'
+          file_name: "/tmp/{{ inventory_hostname }}_windowspatch.html"
       delegate_to: localhost
       when: sys_id is defined
 
