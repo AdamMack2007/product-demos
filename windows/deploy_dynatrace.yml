@@ -8,4 +8,4 @@
         oneagent_paas_token: "{{ dynatrace_token }}"
         oneagent_environment_url: "{{ dynatrace_url }}"
         package_state: "{{ dynatrace_package_state | default('present') }}"
-      when: dynatrace_package_state is defined
+      when: dynatrace_package_state == 'Yes'
