@@ -17,8 +17,13 @@
 
     - name: Create website index.html
       ansible.windows.win_copy:
-        content: "{{ iis_message }}"
+        src: "hello.html"
         dest: C:\Inetpub\wwwroot\index.html
+    
+    - name: Copy images
+      ansible.windows.win_copy:
+        src: "hayden.jpg"
+        dest: C:\Inetpub\wwwroot\hayden.jpg
 
     - name: Show website address
       ansible.builtin.debug:
