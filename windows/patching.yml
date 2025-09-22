@@ -33,25 +33,25 @@
       when: ritm is defined
       failed_when: false
 
-    #- name: Get sys_id for RITM
-    #  uri:
-    #    url: "{{ snow_host }}/api/now/table/sc_req_item?sysparm_query=number={{ ritm }}&sysparm_fields=sys_id"
-    #    method: GET
-    #    user: "{{ snow_user }}"
-    #    password: "{{ snow_password }}"
-    #    force_basic_auth: yes
-    #    headers:
-    #      Accept: "application/json"
-    #    return_content: yes
-    #    status_code: 200
-    #  register: request_item
-    #  delegate_to: localhost
-    #  when: ritm is defined
+#   #- name: Get sys_id for RITM
+#   #  uri:
+#   #    url: "{{ snow_host }}/api/now/table/sc_req_item?sysparm_query=number={{ ritm }}&sysparm_fields=sys_id"
+#   #    method: GET
+#   #    user: "{{ snow_user }}"
+#   #    password: "{{ snow_password }}"
+#   #    force_basic_auth: yes
+#   #    headers:
+#   #      Accept: "application/json"
+#   #    return_content: yes
+#   #    status_code: 200
+#   #  register: request_item
+#   #  delegate_to: localhost
+#   #  when: ritm is defined
 #
-    #- name: Set sys_id fact
-    #  set_fact:
-    #    sys_id: "{{ request_item.json.result[0].sys_id }}"
-    #  when: request_item.json.result[0].sys_id | length > 0
+#   #- name: Set sys_id fact
+#   #  set_fact:
+#   #    sys_id: "{{ request_item.json.result[0].sys_id }}"
+#   #  when: request_item.json.result[0].sys_id | length > 0
 
 
     #- name: "Attach output CSV file to incident"
