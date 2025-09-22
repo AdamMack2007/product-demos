@@ -41,7 +41,7 @@
       when: request_item.json.result[0].sys_id | length > 0
 
     - name: Add a comment and attachment to the request
-      when: request_item.record | length > 0
+      when: sys_id is defined
       block:
         - name: Attach report to the request
           servicenow.itsm.attachment_upload:
