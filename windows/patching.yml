@@ -20,17 +20,20 @@
         flat: yes
       delegate_to: "{{ inventory_hostname }}"
 
-    - name: Collect a request item by number
-      register: request_item
-      servicenow.itsm.api_info:
-        resource: sc_req_item
-        username: "{{ snow_user }}"
+    - name: Get sys_id for RITM
+      uri:
+        url: "{{ snow_host }}/api/now/table/sc_req_item?sysparm_query=number={{ ritm }}&sysparm_fields=sys_id"
+        method: GET
+        user: "{{ snow_user }}"
         password: "{{ snow_password }}"
-        instance: "{{ snow_id }}"
-        sysparm_query: "number={{ ritm }}"
-        columns: [sys_id]
-      when: ritm is defined
+        force_basic_auth: yes
+        headers:
+          Accept: "application/json"
+        return_content: yes
+        status_code: 200
+      register: request_item
       delegate_to: localhost
+      when: ritm is defined
 
     - name: Add a comment and attachment to the request
       vars: { sys_id: "{{ request_item.record[0].sys_id }}" }
