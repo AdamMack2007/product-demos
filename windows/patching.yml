@@ -50,7 +50,6 @@
         validate_certs: false
         force_basic_auth: no
         status_code: 201
-        body_format: form-multipart
         headers:
             Accept: 'application/json'
             Content-Type: "text/html"
