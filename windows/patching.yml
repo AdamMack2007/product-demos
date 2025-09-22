@@ -46,10 +46,11 @@
         password: "{{ snow_password }}"
         instance: "{{ snow_id }}"
         state: present
-        number: "{{ sys_id }}"
+        table: sc_req_item
+        number: "{{ ritm }}"
         attachment: /tmp/{{ inventory_hostname }}_windowspatch.html
       delegate_to: localhost
-      when: sys_id is defined
+      when: ritm is defined
 
     - name: "Attach output CSV file to incident"
       ansible.builtin.uri:
