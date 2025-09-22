@@ -4,4 +4,6 @@ Name: {{ ansible_eda.event.payload.servers | default(ansible_eda.event.payload.s
 {% if ansible_eda.event.payload.domain_join_name is defined %}
 Domain Joined: {{ ansible_eda.event.payload.domain_join_name }}
 {% endif %}
+{% if ansible_eda.event.payload.selected_apps is defined %}
 Packages updated: {{ ansible_eda.event.payload.selected_apps }}
+{% endif %}
