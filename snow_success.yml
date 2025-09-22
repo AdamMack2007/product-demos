@@ -20,7 +20,7 @@
         table: sc_req_item
         number: "{{ ritm }}"
         data:
-          description: "{{ lookup('template','snow_success.j2') }}"
+          work_notes: "{{ lookup('template','snow_success.j2') }}"
       delegate_to: localhost
       when: ritm is defined
       run_once: true
