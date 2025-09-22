@@ -42,12 +42,25 @@
 
     - name: "Attach output CSV file to incident"
       ansible.builtin.uri:
-        url: "{{ snow_host }}api/now/attachment/file?table_name=sc_req_item&table_sys_id={{ sys_id }}&file_name=/tmp/{{ inventory_hostname }}_windowspatch.html" 
+        url: "{{ snow_host }}api/now/attachment/upload" 
         user: "{{ snow_user }}"
         password: "{{ snow_password }}"
         method: POST
+        return_content: true
+        validate_certs: false
+        force_basic_auth: no
+        status_code: 201
+        body_format: form-multipart
         headers:
-          Content-Type: "text/html"
+            Accept: 'application/json'
+            Content-Type: "text/html"
+        body:
+          table_name:
+              content: sc_req_item
+          table_sys_id:
+              content: '{{ sys_id }}'
+          uploadFile:
+              filename: "/tmp/{{ inventory_hostname }}_windowspatch.html"
       delegate_to: localhost
       when: sys_id is defined
 
