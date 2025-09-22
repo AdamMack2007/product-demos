@@ -29,7 +29,6 @@
         force_basic_auth: yes
         headers:
           Accept: "application/json"
-          Content-Type: "text/html"
         return_content: yes
         status_code: 200
       register: request_item
@@ -47,6 +46,8 @@
         user: "{{ snow_user }}"
         password: "{{ snow_password }}"
         method: POST
+        headers:
+          Content-Type: "text/html"
       delegate_to: localhost
       when: sys_id is defined
 
