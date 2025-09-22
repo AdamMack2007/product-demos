@@ -50,7 +50,9 @@
             password: "{{ snow_password }}"
             instance: "{{ snow_id }}"
             table_sys_id: "{{ sys_id }}"
-            attachments: [{ path: "/tmp/{{ inventory_hostname }}_windowspatch.html" }]
+            attachments: 
+              - path: "/tmp/{{ inventory_hostname }}_windowspatch.html" 
+                name: "{{ inventory_hostname }}_windowspatch.html"
           delegate_to: localhost
 
         - name: Ensure a comment is added to the request
