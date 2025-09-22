@@ -61,7 +61,7 @@
               content: '{{ sys_id }}'
           uploadFile:
               filename: "/tmp/{{ inventory_hostname }}_windowspatch.html"
-        delegate_to: localhost
+      delegate_to: localhost
       when: sys_id is defined
 
 #- name: Add a comment and attachment to the request
