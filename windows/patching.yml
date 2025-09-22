@@ -27,7 +27,7 @@
         username: "{{ snow_user }}"
         password: "{{ snow_password }}"
         instance: "{{ snow_id }}"
-        sysparm_query: number={{ ritm }}
+        sysparm_query: "number={{ ritm }}"
         columns: [sys_id]
       when: ritm is defined
       delegate_to: localhost
