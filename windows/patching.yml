@@ -43,6 +43,7 @@
             instance: "{{ snow_id }}"
             table_sys_id: "{{ sys_id }}"
             attachments: [{ path: "/tmp/{{ inventory_hostname }}_windowspatch.html" }]
+          delegate_to: localhost
 
         - name: Ensure a comment is added to the request
           servicenow.itsm.api:
@@ -54,3 +55,4 @@
             action: patch
             data:
               comments: "The patch report for {{ inventory_hostname }} is attached."
+          delegate_to: localhost
