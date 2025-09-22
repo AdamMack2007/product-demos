@@ -42,7 +42,7 @@
 
     - name: "Attach output CSV file to incident"
       ansible.builtin.uri:
-        url: "https://{{ snow_host }}/api/now/attachment/file?table_name=sc_req_item&table_sys_id={{ sys_id }}&file_name=/tmp/{{ inventory_hostname }}_windowspatch.html" 
+        url: "{{ snow_host }}/api/now/attachment/file?table_name=sc_req_item&table_sys_id={{ sys_id }}&file_name=/tmp/{{ inventory_hostname }}_windowspatch.html" 
         user: "{{ snow_user }}"
         password: "{{ snow_password }}"
         method: POST
