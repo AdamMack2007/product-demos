@@ -19,3 +19,38 @@
         dest: "/tmp/{{ inventory_hostname }}_windowspatch.html"
         flat: yes
       delegate_to: "{{ inventory_hostname }}"
+
+    - name: Collect a request item by number
+      register: request_item
+      servicenow.itsm.api_info:
+        resource: sc_req_item
+        username: "{{ snow_user }}"
+        password: "{{ snow_password }}"
+        instance: "{{ snow_id }}"
+        sysparm_query: number={{ ritm }}
+        columns: [sys_id]
+      when: ritm is defined
+
+    - name: Add a comment and attachment to the request
+      vars: { sys_id: "{{ request_item.record[0].sys_id }}" }
+      when: request_item.record | length > 0
+      block:
+        - name: Attach report to the request
+          servicenow.itsm.attachment_upload:
+            table_name: sc_req_item
+            username: "{{ snow_user }}"
+            password: "{{ snow_password }}"
+            instance: "{{ snow_id }}"
+            table_sys_id: "{{ sys_id }}"
+            attachments: [{ path: "/tmp/{{ inventory_hostname }}_windowspatch.html" }]
+
+        - name: Ensure a comment is added to the request
+          servicenow.itsm.api:
+            username: "{{ snow_user }}"
+            password: "{{ snow_password }}"
+            instance: "{{ snow_id }}"
+            resource: sc_req_item
+            sys_id: "{{ sys_id }}"
+            action: patch
+            data:
+              comments: "The patch report for {{ inventory_hostname }} is attached."
