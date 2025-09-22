@@ -1,0 +1,66 @@
+#   #- name: Get sys_id for RITM
+#   #  uri:
+#   #    url: "{{ snow_host }}/api/now/table/sc_req_item?sysparm_query=number={{ ritm }}&sysparm_fields=sys_id"
+#   #    method: GET
+#   #    user: "{{ snow_user }}"
+#   #    password: "{{ snow_password }}"
+#   #    force_basic_auth: yes
+#   #    headers:
+#   #      Accept: "application/json"
+#   #    return_content: yes
+#   #    status_code: 200
+#   #  register: request_item
+#   #  delegate_to: localhost
+#   #  when: ritm is defined
+#
+#   #- name: Set sys_id fact
+#   #  set_fact:
+#   #    sys_id: "{{ request_item.json.result[0].sys_id }}"
+#   #  when: request_item.json.result[0].sys_id | length > 0
+
+
+    #- name: "Attach output CSV file to incident"
+    #  ansible.builtin.uri:
+    #    url: "{{ snow_host }}api/now/attachment/file" 
+    #    user: "{{ snow_user }}"
+    #    password: "{{ snow_password }}"
+    #    method: POST
+    #    return_content: true
+    #    status_code: 201
+    #    body_format: form-multipart
+    #    headers:
+    #        Content-Type: "text/html"
+    #        Content-Transfer-Encoding: "utf-8"
+    #    body:
+    #      table_name: sc_req_item
+    #      table_sys_id: '{{ sys_id }}'
+    #      file_name: "/tmp/{{ inventory_hostname }}_windowspatch.html"
+    #  delegate_to: localhost
+    #  when: sys_id is defined
+#
+#- name: Add a comment and attachment to the request
+#  when: sys_id is defined
+#  block:
+#    - name: Attach report to the request
+#      servicenow.itsm.attachment_upload:
+#        table_name: sc_req_item
+#        username: "{{ snow_user }}"
+#        password: "{{ snow_password }}"
+#        instance: "{{ snow_id }}"
+#        table_sys_id: "{{ sys_id }}"
+#        attachments: 
+#          - path: "/tmp/{{ inventory_hostname }}_windowspatch.html" 
+#            name: "{{ inventory_hostname }}_windowspatch.html"
+#      delegate_to: localhost
+#
+#    - name: Ensure a comment is added to the request
+#      servicenow.itsm.api:
+#        username: "{{ snow_user }}"
+#        password: "{{ snow_password }}"
+#        instance: "{{ snow_id }}"
+#        resource: sc_req_item
+#        sys_id: "{{ sys_id }}"
+#        action: patch
+#        data:
+#          comments: "The patch report for {{ inventory_hostname }} is attached."
+#      delegate_to: localhost
