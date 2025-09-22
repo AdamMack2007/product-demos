@@ -38,7 +38,7 @@
     - name: Set sys_id fact
       set_fact:
         sys_id: "{{ request_item.json.result[0].sys_id }}"
-      when: request_item.result | length > 0
+      when: request_item.json.result[0].sys_id | length > 0
 
     - name: Add a comment and attachment to the request
       when: request_item.record | length > 0
