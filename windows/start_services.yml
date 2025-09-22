@@ -2,7 +2,7 @@
   hosts: all
   gather_facts: no
   tasks:
-    - name: Start IIS World Wide Web Publishing Service
+    - name: Start Windows Service
       ansible.windows.win_service:
-        name: W3SVC
+        name: "{{ service_name | default('W3SVC') }}"
         state: started
