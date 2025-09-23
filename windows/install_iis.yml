@@ -22,8 +22,8 @@
     
     - name: Copy images
       ansible.windows.win_copy:
-        src: "hayden.jpg"
-        dest: C:\Inetpub\wwwroot\hayden.jpg
+        src: "hello_picture.jpg"
+        dest: C:\Inetpub\wwwroot\hello_picture.jpg
 
     - name: Show website address
       ansible.builtin.debug:
