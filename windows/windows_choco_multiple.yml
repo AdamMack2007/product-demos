@@ -4,7 +4,7 @@
   gather_facts: false
 
   tasks:
-    - name: Install Chocolatey Packages
+    - name: Install Chocolatey Packages from ServiceNow
       when: 
         - ansible_eda.event.payload.selected_apps is defined
         - ansible_eda.event.payload.selected_apps | length > 0
@@ -27,3 +27,12 @@
             state: "{{ package_state | default('present') }}"
           loop: "{{ snow_choco_packages }}"
           when: snow_choco_packages is defined
+
+    - name: Install specific versions of packages sequentially
+      chocolatey.chocolatey.win_chocolatey:
+        name: "{{ item }}"
+        state: "{{ package_state | default('present') }}"
+      loop: "{{ choco_packages }}"
+      when: 
+        - choco_packages is defined
+        - choco_packages | length > 0
