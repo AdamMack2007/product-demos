@@ -2,6 +2,13 @@
     Download OneAgent installer and install OneAgent on Windows machines
   hosts: all
   
+  pre_tasks:
+    - name: Set Agent Facts (EDA)
+      when: ansible_eda.payload.dynatrace_package_state is defined
+      ansible.builtin.set_fact:
+        dynatrace_package_state: "{{ ansible_eda.payload.dynatrace_package_state }}"
+
+
   roles:
     - role: dynatrace.oneagent.oneagent
       vars:
