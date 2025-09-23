@@ -4,22 +4,26 @@
   gather_facts: false
 
   tasks:
-    - name: Set ServiceNow request as list
-      set_fact:
-        snow_choco_packages: "{{ ansible_eda.event.payload.selected_apps.split(',') }}"
-      when: ansible_eda.event.payload.selected_apps is defined
+    - name: Install Chocolatey Packages
+      when: 
+        - ansible_eda.event.payload.selected_apps is defined
+        - ansible_eda.event.payload.selected_apps | length > 0
+      block:
+        - name: Set ServiceNow request as list
+          set_fact:
+            snow_choco_packages: "{{ ansible_eda.event.payload.selected_apps.split(',') }}"
 
-    - name: Install specific versions of packages sequentially
-      chocolatey.chocolatey.win_chocolatey:
-        name: "{{ item }}"
-        state: "{{ package_state | default('present') }}"
-      loop: "{{ choco_packages }}"
-      when: snow_choco_packages is not defined
-    
+        - name: Install specific versions of packages sequentially
+          chocolatey.chocolatey.win_chocolatey:
+            name: "{{ item }}"
+            state: "{{ package_state | default('present') }}"
+          loop: "{{ choco_packages }}"
+          when: snow_choco_packages is not defined
 
-    - name: Install specific versions of packages sequentially
-      chocolatey.chocolatey.win_chocolatey:
-        name: "{{ item }}"
-        state: "{{ package_state | default('present') }}"
-      loop: "{{ snow_choco_packages }}"
-      when: snow_choco_packages is defined
+
+        - name: Install specific versions of packages sequentially
+          chocolatey.chocolatey.win_chocolatey:
+            name: "{{ item }}"
+            state: "{{ package_state | default('present') }}"
+          loop: "{{ snow_choco_packages }}"
+          when: snow_choco_packages is defined
