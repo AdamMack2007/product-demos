@@ -37,5 +37,5 @@
           failed_when: false
 
         - name: Reboot windows machine
-          when: r_domain_membership.reboot_required
+          when: reboot_server is defined
           ansible.windows.win_reboot:
