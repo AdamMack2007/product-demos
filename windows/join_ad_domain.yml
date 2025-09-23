@@ -34,6 +34,7 @@
             domain_admin_password: "{{ ansible_password }}"
             domain_ou_path: "OU=Demo,DC={{ domain_ou.0 }},DC={{ domain_ou.1 }}"
             state: domain
+          failed_when: false
 
         - name: Reboot windows machine
           when: r_domain_membership.reboot_required
