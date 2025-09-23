@@ -19,7 +19,9 @@
         - name: Set a single address on the adapter named Ethernet
           ansible.windows.win_dns_client:
             adapter_names: 'Ethernet*'
-            dns_servers: "{{ domain_controller_private_ip }}"
+            dns_servers: 
+              - "{{ domain_controller_private_ip }}"
+              - 1.1.1.1
 
         - name: Update the hostname
           ansible.windows.win_hostname:
