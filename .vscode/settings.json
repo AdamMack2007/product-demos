@@ -1,4 +1,5 @@
 {
     "editor.renderWhitespace": "all",
-    "ansible.python.interpreterPath": "/usr/bin/python3"
+    "ansible.python.interpreterPath": "/usr/bin/python3",
+    "ansible.mcpServer.enabled": true
 }
