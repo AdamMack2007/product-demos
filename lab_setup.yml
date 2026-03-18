@@ -31,7 +31,7 @@
     - name: Manage Linux VMs
       community.proxmox.proxmox:
         api_user: root@pam
-        api_password: "{{ api_password }}"
+        api_password: "{{ lookup('env', 'PROXMOX_PASSWORD') }}"
         api_host: pve1.mackdev.net
         hostname: "{{ item.name }}"
         node: "{{ item.node }}"
@@ -43,7 +43,7 @@
     - name: Manage Windows VMs
       community.proxmox.proxmox_kvm:
         api_user: root@pam
-        api_password: "{{ api_password }}"
+        api_password: "{{ lookup('env', 'PROXMOX_PASSWORD') }}"
         api_host: pve1.mackdev.net
         name: "{{ item.name }}"
         node: "{{ item.node }}"
