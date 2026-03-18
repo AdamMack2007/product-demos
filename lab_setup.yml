@@ -1,4 +1,4 @@
-- hosts: proxmox
+- hosts: localhost
   gather_facts: false
   connection: local
 
@@ -28,22 +28,25 @@
         name: dc1
   tasks:    
     
-    - name: Start Linux VMs
-      community.general.proxmox_kvm:
+    - name: Manage Linux VMs
+      community.proxmox.proxmox:
         api_user: root@pam
         api_password: "{{ api_password }}"
         api_host: pve1.mackdev.net
-        name: "{{ item.name }}"
+        hostname: "{{ item.name }}"
         node: "{{ item.node }}"
-        state: "{{ linux_vm_state }}"
+        state: "{{ linux_vm_state | default('stopped') }}"
+        timeout: 90
+        force: true
       loop: "{{ linux_vms }}"
 
-    - name: Start Windows VMs
-      community.general.proxmox_kvm:
+    - name: Manage Windows VMs
+      community.proxmox.proxmox_kvm:
         api_user: root@pam
         api_password: "{{ api_password }}"
         api_host: pve1.mackdev.net
         name: "{{ item.name }}"
         node: "{{ item.node }}"
-        state: "{{ windows_vm_state }}"
+        state: "{{ windows_vm_state | default('stopped') }}"
+        timeout: 90
       loop: "{{ windows_vms }}"
