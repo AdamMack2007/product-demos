@@ -35,9 +35,8 @@
         api_host: pve1.mackdev.net
         name: "{{ item.name }}"
         node: "{{ item.node }}"
-        state: "{{ lab_state }}"
+        state: "{{ linux_vm_state }}"
       loop: "{{ linux_vms }}"
-      when: start_linux_vms | default(false)
 
     - name: Start Windows VMs
       community.general.proxmox_kvm:
@@ -46,6 +45,5 @@
         api_host: pve1.mackdev.net
         name: "{{ item.name }}"
         node: "{{ item.node }}"
-        state: "{{ lab_state }}"
+        state: "{{ windows_vm_state }}"
       loop: "{{ windows_vms }}"
-      when: start_windows_vms | default(false)
