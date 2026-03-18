@@ -39,6 +39,8 @@
         timeout: 90
         force: true
       loop: "{{ linux_vms }}"
+      loop_control:
+        label: "{{ item.name }}"
 
     - name: Manage Windows VMs
       community.proxmox.proxmox_kvm:
@@ -50,3 +52,5 @@
         state: "{{ windows_vm_state | default('stopped') }}"
         timeout: 90
       loop: "{{ windows_vms }}"
+      loop_control:
+        label: "{{ item.name }}"
