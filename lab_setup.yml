@@ -1,0 +1,51 @@
+- hosts: proxmox
+  gather_facts: false
+  connection: local
+
+  vars:
+    linux_vms:
+      - node: pve2
+        name: database1
+      - node: pve2
+        name: web1
+      - node: pve2
+        name: web3
+      - node: pve2
+        name: web4
+      - node: pve5
+        name: testing
+
+    windows_vms:
+      - node: pve2
+        name: win1
+      - node: pve2
+        name: win2
+      - node: pve2
+        name: win3
+      - node: pve2
+        name: win4
+      - node: pve3
+        name: dc1
+  tasks:    
+    
+    - name: Start Linux VMs
+      community.general.proxmox_kvm:
+        api_user: root@pam
+        api_password: "{{ api_password }}"
+        api_host: pve1.mackdev.net
+        name: "{{ item.name }}"
+        node: "{{ item.node }}"
+        state: "{{ lab_state }}"
+      loop: "{{ linux_vms }}"
+      when: start_linux_vms | default(false)
+
+    - name: Start Windows VMs
+      community.general.proxmox_kvm:
+        api_user: root@pam
+        api_password: "{{ api_password }}"
+        api_host: pve1.mackdev.net
+        name: "{{ item.name }}"
+        node: "{{ item.node }}"
+        state: "{{ lab_state }}"
+      loop: "{{ windows_vms }}"
+      when: start_windows_vms | default(false)
