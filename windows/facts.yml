@@ -1,5 +1,5 @@
 - name: Force fresh fact gathering for Windows hosts
-  hosts: windows
+  hosts: all
   gather_facts: no
   tasks:
     - name: Run setup module and update cache
