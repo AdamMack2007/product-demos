@@ -15,7 +15,7 @@
           }
       register: kb_status
       loop: "{{ cve_required_updates | default([]) }}"
-      changed_when: false
+      changed_when: kb_status.results[0].output[0].Installed == 'true'
 
     - name: Set install state as fact
       ansible.builtin.set_fact:
@@ -28,7 +28,7 @@
           kb_install_state: "{{ kb_status.results[0].output[0].Installed }}"
     
     - name: Check for update
-      when: kb_installed == 'false'
+      when: not kb_status.changed
       block:
         - name: Check if update is available on host
           when: cve_update_search is defined
