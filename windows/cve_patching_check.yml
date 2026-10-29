@@ -15,7 +15,7 @@
           }
       register: kb_status
       loop: "{{ cve_required_updates | default([]) }}"
-      changed_when: kb_status.results[0].output[0].Installed == 'true'
+      changed_when: kb_status.output[0].Installed == 'true'
 
     - name: Set install state as fact
       ansible.builtin.set_fact:
