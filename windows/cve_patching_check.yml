@@ -31,7 +31,6 @@
       when: kb_status is not changed
       block:
         - name: Check if update is available on host
-          when: cve_update_search is defined
           ansible.windows.win_updates:
             reboot: "false"
             category_names: "*"
