@@ -28,7 +28,7 @@
           kb_install_state: "{{ kb_status.results[0].output[0].Installed }}"
     
     - name: Check for update
-      when: kb_installed == false
+      when: kb_installed == 'false'
       block:
         - name: Check if update is available on host
           when: cve_update_search is defined
