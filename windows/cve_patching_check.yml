@@ -1,0 +1,58 @@
+---
+- name: Windows updates
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Check whether a specific KB is installed
+      ansible.windows.win_powershell:
+        script: |
+          $kb = "{{ item }}"
+          $hotfix = Get-HotFix -Id $kb -ErrorAction SilentlyContinue
+          [PSCustomObject]@{
+            KB        = $kb
+            Installed = ($null -ne $hotfix)
+          }
+      register: kb_status
+      loop: "{{ cve_required_updates | default([]) }}"
+      changed_when: false
+
+    - name: Set install state as fact
+      ansible.builtin.set_stats:
+        data:
+          kb_install_state: "{{ kb_status.results[0].output[0].Installed }}"
+    
+    - name: Check for update
+      when: not kb_install_state
+      block:
+        - name: Check if update is available on host
+          when: cve_update_search is defined
+          ansible.windows.win_updates:
+            reboot: "false"
+            category_names: "*"
+            accept_list: "{{ cve_required_updates | default([]) }}"
+            state: searched
+          register: patchingresult
+          check_mode: true
+
+        - name: Build update summary
+          when: patchingresult.updates is defined
+          ansible.builtin.set_fact:
+            update_summary: "{{ update_summary | default([]) + [update_item] }}"
+          vars:
+            update_item:
+              title: "{{ item.title }}"
+              kb: "{{ item.kb | map('regex_replace', '^', 'KB') | join(', ') }}"
+              categories: "{{ item.categories | join(', ') }}"
+              downloaded: "{{ item.downloaded }}"
+              installed: "{{ item.installed }}"
+          loop: "{{ patchingresult.updates | default({}) | dict2items | map(attribute='value') | list }}"
+          loop_control:
+            label: "{{ item.title }}"
+
+        - name: Set patching result as stat
+          when: patchingresult.updates is defined
+          ansible.builtin.set_stats:
+            data:
+              patching_result: "{{ update_summary }}"
+  
