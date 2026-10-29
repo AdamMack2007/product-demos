@@ -1,0 +1,36 @@
+- name: Trigger EDA webhook
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    webhook_url: "https://orchestrator.apps.mackdev.net/api/v1/webhooks/15735822-b025-4555-aaa9-d1c86ebde1dd"
+    webhook_url_base: "https://orchestrator.apps.mackdev.net"
+    event_payload:
+      host: "{{ host }}"
+      cve_id: "{{ cve_id }}"
+
+  tasks:
+    - name: Obtain OAuth token
+      ansible.builtin.uri:
+        url: "{{ webhook_url_base }}/api/v1/auth/token"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          grant_type: client_credentials
+          client_id: "{{ oauth_client_id }}"
+          client_secret: "{{ oauth_client_secret }}"
+        status_code: 200
+      register: token_response
+
+    - name: Post event payload to AO Webhook
+      ansible.builtin.uri:
+        url: "{{ webhook_url }}"
+        method: POST
+        body_format: json
+        headers:
+          Authorization: "Bearer {{ token_response.json.access_token }}"
+          Content-Type: application/json
+        body: "{{ event_payload }}"
+        status_code: 202
+      register: webhook_response
