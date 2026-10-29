@@ -20,6 +20,7 @@
     - name: Set install state as fact
       ansible.builtin.set_fact:
         kb_installed: "{{ kb_status.results[0].output[0].Installed }}"
+        kb_shortname: "{{ cve_required_updates | map('regex_replace', '^KB', '') | list }}"
 
     - name: Set install state as stat
       ansible.builtin.set_stats:
@@ -27,7 +28,7 @@
           kb_install_state: "{{ kb_status.results[0].output[0].Installed }}"
     
     - name: Check for update
-      when: not kb_installed
+      when: kb_installed == false
       block:
         - name: Check if update is available on host
           when: cve_update_search is defined
