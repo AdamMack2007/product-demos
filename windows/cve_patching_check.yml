@@ -18,6 +18,10 @@
       changed_when: false
 
     - name: Set install state as fact
+      ansible.builtin.set_fact:
+        kb_install_state: "{{ kb_status.results[0].output[0].Installed }}"
+
+    - name: Set install state as stat
       ansible.builtin.set_stats:
         data:
           kb_install_state: "{{ kb_status.results[0].output[0].Installed }}"
