@@ -30,7 +30,7 @@
           Content-Type: application/json
         body:
           host: "{{ ansible_eda.event.payload.host }}"    
-          cve_id: "{{ ansible_eda.event.payload.cve_id }}"status_code: 202
+          cve_id: "{{ ansible_eda.event.payload.cve_id }}"
           ritm: "{{ ansible_eda.event.payload.ritm }}"
         status_code: 202
       register: webhook_response
