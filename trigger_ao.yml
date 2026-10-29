@@ -7,8 +7,9 @@
     webhook_url: "https://orchestrator.apps.mackdev.net/api/v1/webhooks/15735822-b025-4555-aaa9-d1c86ebde1dd"
     webhook_url_base: "https://orchestrator.apps.mackdev.net"
     event_payload:
-      host: "{{ host }}"
-      cve_id: "{{ cve_id }}"
+      host: "{{ ansible_eda.event.payload.host }}"
+      cve_id: "{{ ansible_eda.event.payload.cve_id }}"
+      ritm: "{{ ansible_eda.event.payload.ritm }}"
 
   tasks:
     - name: Obtain OAuth token
