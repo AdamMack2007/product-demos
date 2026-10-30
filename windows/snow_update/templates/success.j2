@@ -5,9 +5,14 @@ Host: {{ host }}
 Environment: {{ host_env }}
 Reasoning: {{ reasoning }}
 
----- Updates Info -----
-{% for kb in cve_required_updates %}
-KB: {{ kb }}
+---- Updates Installed -----
+{% for kb in kb_download_installed %}
+{{ kb }}
+{% endfor %}
+
+---- Updates Failed -----
+{% for kb in kb_download_failed %}
+{{ kb }}
 {% endfor %}
 
 --- CVE Information --- 
