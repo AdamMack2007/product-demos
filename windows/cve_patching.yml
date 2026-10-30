@@ -96,6 +96,7 @@
                   ansible.builtin.set_stats:
                     data:
                       kb_download_failed: "{{ kb_download_failed | map(attribute='KB') | list }}"
+                      kb_download_installed: "{{ kb_download_ok | map(attribute='KB') | list }}"
 
             - name: Install downloaded KB files
               ansible.windows.win_powershell:
