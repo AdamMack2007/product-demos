@@ -17,7 +17,7 @@
             reboot: "false"
             accept_list: "{{ cve_required_updates }}"
             state: installed
-          register: patchingresult
+          register: patching_result
 
         - name: Build report server
           ansible.builtin.include_role:
