@@ -42,7 +42,7 @@
           password: "{{ snow_password }}"
         table_name: "sc_req_item"
         table_sys_id: "{{ ritm_response.json.result[0].sys_id }}"
-        attachments: "{{ snow_attachments }}"
+        attachments: "{{ snow_attachments | default(omit) }}"
         # The following lines are now handled by the snow_attachments variable
         #   - path: "/tmp/patch_report_{{ ansible_date_time.iso8601_basic_short }}.html"
         #     name: "Patch Report - {{ now(fmt='%Y-%m-%d') }}.html"
