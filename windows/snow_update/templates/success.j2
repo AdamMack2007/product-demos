@@ -5,6 +5,7 @@ Host: {{ host }}
 Environment: {{ host_env }}
 Reasoning: {{ reasoning }}
 
+{% if patching_result.installed_update_count > 0 %}
 ---- Updates Info -----
 {% for item in patching_result %}
   Title: {{ item.title }}
@@ -13,6 +14,7 @@ Reasoning: {{ reasoning }}
   Downloaded: {{ item.downloaded }}
   Installed: {{ item.installed }}
 {% endfor %}
+{% endif %}
 
 --- CVE Information --- 
 
