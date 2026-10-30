@@ -54,9 +54,6 @@
                   Architecture: "{{ kb_architecture | default('x64') }}"
               loop: "{{ cve_required_updates }}"
               register: kb_download
-              become: true
-              become_method: ansible.builtin.runas
-              become_user: SYSTEM
 
             - name: Install downloaded KB files
               ansible.windows.win_powershell:
@@ -71,9 +68,7 @@
                   Path: "{{ item }}"
               loop: "{{ kb_download.results | map(attribute='output') | flatten }}"
               register: kb_manual_install
-              become: true
-              become_method: ansible.builtin.runas
-              become_user: SYSTEM
+
         - name: Build Patch Report
           when: patching_result.installed_update_count > 0
           block:
