@@ -90,8 +90,8 @@
             - name: Set failed downloads as stat
               ansible.builtin.set_stats:
                 data:
-                  kb_download_failed: "{{ kb_download_failed | map(attribute='KB') | list }}"
-                  kb_download_installed: "{{ kb_download_ok | map(attribute='KB') | list }}"
+                  kb_failed: "{{ kb_download_failed | map(attribute='KB') | list }}"
+                  kb_installed: "{{ kb_download_ok | map(attribute='KB') | list }}"
                   
             - name: Report KBs that could not be downloaded
               when: kb_download_failed | length > 0

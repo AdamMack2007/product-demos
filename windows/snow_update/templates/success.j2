@@ -6,12 +6,12 @@ Environment: {{ host_env }}
 Reasoning: {{ reasoning }}
 
 ---- Updates Installed -----
-{% for kb in kb_download_installed %}
+{% for kb in kb_installed %}
 {{ kb }}
 {% endfor %}
 
 ---- Updates Failed -----
-{% for kb in kb_download_failed %}
+{% for kb in kb_failed %}
 {{ kb }}
 {% endfor %}
 
