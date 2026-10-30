@@ -11,11 +11,13 @@
             path: C:\Temp
             state: directory
 
-        - name: Patch windows server
-          ansible.builtin.include_role:
-            name: demo.patching.patch_windows
-            vars:
-              cve_required_updates: "{{ cve_required_updates }}"
+        - name: Install Windows Updates
+          ansible.windows.win_updates:
+            category_names: "{{ win_update_categories | default(omit) }}"
+            reboot: "{{ allow_reboot | default ('true') }}"
+            accept_list: "{{ cve_required_updates }}"
+            state: installed
+          register: patchingresult
 
         - name: Build report server
           ansible.builtin.include_role:
