@@ -24,14 +24,20 @@
           block:
             - name: Ensure kbupdate PowerShell module is installed
               ansible.windows.win_powershell:
+                error_action: stop
                 script: |
+                  $ErrorActionPreference = 'Stop'
+                  $ProgressPreference = 'SilentlyContinue'
                   $Ansible.Changed = $false
                   if (-not (Get-Module -ListAvailable -Name kbupdate)) {
                     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
                     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
                     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-                    Install-Module -Name kbupdate -Scope AllUsers -Force
+                    Install-Module -Name kbupdate -Scope AllUsers -Force -AllowClobber -Confirm:$false
                     $Ansible.Changed = $true
+                  }
+                  if (-not (Get-Module -ListAvailable -Name kbupdate)) {
+                    throw "kbupdate module is still not available after Install-Module"
                   }
 
             - name: Download KB files to C:\Temp
@@ -39,21 +45,57 @@
                 script: |
                   param($Kb, $Architecture)
                   $Ansible.Changed = $false
+                  $status = [PSCustomObject]@{
+                    KB     = $Kb
+                    Status = 'AlreadyInstalled'
+                    Files  = @()
+                    Error  = $null
+                  }
                   if (Get-HotFix -Id $Kb -ErrorAction SilentlyContinue) {
-                    return
+                    return $status
                   }
-                  Import-Module kbupdate
-                  $files = Save-KbUpdate -Name $Kb -Path C:\Temp -Architecture $Architecture
-                  if (-not $files) {
-                    throw "No downloadable files found for $Kb"
+                  try {
+                    Import-Module kbupdate -ErrorAction Stop
+                    $files = Save-KbUpdate -Name $Kb -Path C:\Temp -Architecture $Architecture -ErrorAction Stop
+                    if (-not $files) {
+                      throw "No downloadable files found for $Kb"
+                    }
+                    $status.Status = 'Downloaded'
+                    $status.Files = @($files | ForEach-Object { $_.FullName })
+                    $Ansible.Changed = $true
                   }
-                  $Ansible.Changed = $true
-                  $files | ForEach-Object { $_.FullName }
+                  catch {
+                    $status.Status = 'Failed'
+                    $status.Error = $_.Exception.Message
+                  }
+                  $status
                 parameters:
                   Kb: "{{ item }}"
                   Architecture: "{{ kb_architecture | default('x64') }}"
               loop: "{{ cve_required_updates }}"
               register: kb_download
+
+            - name: Sort KBs by download result
+              ansible.builtin.set_fact:
+                kb_download_ok: "{{ kb_download_results | selectattr('Status', 'equalto', 'Downloaded') | list }}"
+                kb_download_failed: "{{ kb_download_results | selectattr('Status', 'equalto', 'Failed') | list }}"
+              vars:
+                kb_download_results: "{{ kb_download.results | map(attribute='output') | flatten }}"
+
+            - name: Report KBs that could not be downloaded
+              when: kb_download_failed | length > 0
+              block:
+                - name: Warn about failed downloads
+                  ansible.builtin.debug:
+                    msg: "{{ item.KB }} could not be downloaded: {{ item.Error }}"
+                  loop: "{{ kb_download_failed }}"
+                  loop_control:
+                    label: "{{ item.KB }}"
+
+                - name: Set failed downloads as stat
+                  ansible.builtin.set_stats:
+                    data:
+                      kb_download_failed: "{{ kb_download_failed | map(attribute='KB') | list }}"
 
             - name: Install downloaded KB files
               ansible.windows.win_powershell:
@@ -66,7 +108,7 @@
                   }
                 parameters:
                   Path: "{{ item }}"
-              loop: "{{ kb_download.results | map(attribute='output') | flatten }}"
+              loop: "{{ kb_download_ok | map(attribute='Files') | flatten }}"
               register: kb_manual_install
 
         - name: Build Patch Report
