@@ -5,7 +5,6 @@
 
   tasks:
     - name: Patch Windows Server Block
-      when: cve_update_search is undefined
       block:
         - name: Create Temp Directory
           ansible.windows.win_file:
