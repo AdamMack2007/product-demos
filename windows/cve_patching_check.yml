@@ -39,24 +39,24 @@
           register: patchingresult
           check_mode: true
 
-        - name: Build update summary
-          when: patchingresult.updates is defined
-          ansible.builtin.set_fact:
-            update_summary: "{{ update_summary | default([]) + [update_item] }}"
-          vars:
-            update_item:
-              title: "{{ item.title }}"
-              kb: "{{ item.kb | map('regex_replace', '^', 'KB') | join(', ') }}"
-              categories: "{{ item.categories | join(', ') }}"
-              downloaded: "{{ item.downloaded }}"
-              installed: "{{ item.installed }}"
-          loop: "{{ patchingresult.updates | default({}) | dict2items | map(attribute='value') | list }}"
-          loop_control:
-            label: "{{ item.title }}"
-
-        - name: Set patching result as stat
-          when: patchingresult.updates is defined
-          ansible.builtin.set_stats:
-            data:
-              patching_result: "{{ update_summary }}"
+        #- name: Build update summary
+        #  when: patchingresult.updates is defined
+        #  ansible.builtin.set_fact:
+        #    update_summary: "{{ update_summary | default([]) + [update_item] }}"
+        #  vars:
+        #    update_item:
+        #      title: "{{ item.title }}"
+        #      kb: "{{ item.kb | map('regex_replace', '^', 'KB') | join(', ') }}"
+        #      categories: "{{ item.categories | join(', ') }}"
+        #      downloaded: "{{ item.downloaded }}"
+        #      installed: "{{ item.installed }}"
+        #  loop: "{{ patchingresult.updates | default({}) | dict2items | map(attribute='value') | list }}"
+        #  loop_control:
+        #    label: "{{ item.title }}"
+#
+        #- name: Set patching result as stat
+        #  when: patchingresult.updates is defined
+        #  ansible.builtin.set_stats:
+        #    data:
+        #      patching_result: "{{ update_summary }}"
   
