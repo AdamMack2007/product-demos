@@ -29,7 +29,7 @@
 
         - name: Include SNOW role tasks
           ansible.builtin.include_role:
-            name: ../roles/snow_update
+            name: snow_update
           vars:
             snow_attachments:
               - path: "/tmp/{{ inventory_hostname }}_windowspatch.html"
