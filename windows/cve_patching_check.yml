@@ -25,8 +25,8 @@
     - name: Set install state as stat
       ansible.builtin.set_stats:
         data:
-          kb_install_state: "{{ kb_status.results[0].output[0].Installed | bool }}"
-    
+          kb_install_state: "{{ kb_status.results[0].output[0].Installed | bool | ternary('Yes', 'No') }}"
+
     - name: Check for update
       when: kb_status is not changed
       block:
