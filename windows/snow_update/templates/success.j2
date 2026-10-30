@@ -1,0 +1,23 @@
+Ansible has successfully patched {{ cve_id }} for host {{ host }}.
+
+---- Host Info ----- 
+Host: {{ host }}
+Environment: {{ host_env }}
+Reasoning: {{ reasoning }}
+
+---- Updates Info -----
+{% for item in patching_result %}
+  Title: {{ item.title }}
+  KB: {{ item.kb }}
+  Categories: {{ item.categories }}
+  Downloaded: {{ item.downloaded }}
+  Installed: {{ item.installed }}
+{% endfor %}
+
+--- CVE Information --- 
+
+CVE ID: {{ cve_id }}
+CVE Summary: {{ cve_summary }}
+CVE Severity: {{ cve_severity }}
+Exploit Available: {{ exploit_available }}
+Updates required: {{ cve_required_updates | join(', ') }}

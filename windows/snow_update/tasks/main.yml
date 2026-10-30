@@ -1,0 +1,69 @@
+---
+- name: Update SNOW
+  block:
+    - name: Get sys_id for RITM
+      uri:
+        url: "{{ snow_host }}/api/now/table/sc_req_item?sysparm_query=number={{ ritm }}&sysparm_fields=sys_id"
+        method: GET
+        user: "{{ snow_user }}"
+        password: "{{ snow_password }}"
+        force_basic_auth: yes
+        headers:
+          Accept: "application/json"
+        return_content: yes
+        status_code: 200
+      register: ritm_response
+      delegate_to: localhost
+
+    - name: Show sys_id
+      debug:
+        msg: "{{ ritm_response.json.result[0].sys_id }}"
+
+    - name: Update a Successful Requested Item (RITM)
+      servicenow.itsm.api:
+        instance:
+          host: "{{ snow_host }}"
+          username: "{{ snow_user }}"
+          password: "{{ snow_password }}"
+        resource: "sc_req_item"
+        sys_id: "{{ ritm_response.json.result[0].sys_id }}"
+        action: patch
+        data:
+          short_description: "Updated via Ansible"
+          comments: "{{ lookup('template','success.j2') }}"
+      delegate_to: localhost
+      when: fail_msg is not defined
+
+    - name: Upload file to SNOW and update RITM
+      servicenow.itsm.attachment_upload:
+        instance:
+          host: "{{ snow_host }}"
+          username: "{{ snow_user }}"
+          password: "{{ snow_password }}"
+        table_name: "sc_req_item"
+        table_sys_id: "{{ ritm_response.json.result[0].sys_id }}"
+        attachments: "{{ snow_attachments }}"
+        # The following lines are now handled by the snow_attachments variable
+        #   - path: "/tmp/patch_report_{{ ansible_date_time.iso8601_basic_short }}.html"
+        #     name: "Patch Report - {{ now(fmt='%Y-%m-%d') }}.html"
+      delegate_to: localhost
+      run_once: true
+      when: 
+       - ritm is defined
+       - snow_attachments is defined
+
+    - name: Update a Failed Requested Item (RITM)
+      servicenow.itsm.api:
+        instance:
+          host: "{{ snow_host }}"
+          username: "{{ snow_user }}"
+          password: "{{ snow_password }}"
+        resource: "sc_req_item"
+        sys_id: "{{ ritm_response.json.result[0].sys_id }}"
+        action: patch
+        data:
+          short_description: "Updated via Ansible"
+          comments: "{{ lookup('template','failure.j2') }}"
+      delegate_to: localhost
+      when: fail_msg is defined
+  when: ritm is defined
