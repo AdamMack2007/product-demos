@@ -82,15 +82,26 @@
               vars:
                 kb_download_results: "{{ kb_download.results | map(attribute='output') | flatten }}"
 
+            - name: Set KB Facts
+              ansible.builtin.set_fact:
+                kb_download_installed: "{{ kb_download_ok | map(attribute='KB') | list }}"
+                kb_download_failed: "{{ kb_download_failed | map(attribute='KB') | list }}"
+            
+            - name: Set failed downloads as stat
+              ansible.builtin.set_stats:
+                data:
+                  kb_download_failed: "{{ kb_download_failed | map(attribute='KB') | list }}"
+                  kb_download_installed: "{{ kb_download_ok | map(attribute='KB') | list }}"
+                  
             - name: Report KBs that could not be downloaded
               when: kb_download_failed | length > 0
               block:
                 - name: Warn about failed downloads
                   ansible.builtin.debug:
-                    msg: "{{ item.KB }} could not be downloaded: {{ item.Error }}"
+                    msg: "{{ item }} could not be downloaded"
                   loop: "{{ kb_download_failed }}"
                   loop_control:
-                    label: "{{ item.KB }}"
+                    label: "{{ item }}"
 
                 - name: Set failed downloads as stat
                   ansible.builtin.set_stats:
