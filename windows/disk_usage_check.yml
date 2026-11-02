@@ -1,0 +1,41 @@
+---
+- name: "Windows disk remediation - Get actual free space and publish as stats (no changes)"
+  hosts: all
+  gather_facts: false
+
+  vars:
+    # Drive to check (no colon). AO can override per-run.
+    disk_drive_letter: C
+
+  tasks:
+    - name: Get volume usage for {{ disk_drive_letter }}
+      ansible.builtin.include_role:
+        name: disk_remediation
+        tasks_from: usage
+
+    - name: Show disk usage
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }} {{ disk_usage.DriveLetter }}: -
+          {{ disk_usage.FreeGB }} GB free of {{ disk_usage.SizeGB }} GB
+          ({{ disk_usage.UsedPct }}% used)
+
+    # Flat keys for the common single-host AO run. If several hosts are
+    # targeted these are overwritten by the last host, so use disk_usage_by_host.
+    - name: Publish disk usage as stats for Automation Orchestrator
+      ansible.builtin.set_stats:
+        data:
+          disk_host: "{{ inventory_hostname }}"
+          disk_drive: "{{ disk_usage.DriveLetter }}"
+          disk_size_gb: "{{ disk_usage.SizeGB | float }}"
+          disk_free_gb: "{{ disk_usage.FreeGB | float }}"
+          disk_used_pct: "{{ disk_usage.UsedPct | float }}"
+          disk_free_pct: "{{ (100 - (disk_usage.UsedPct | float)) | round(2) }}"
+          # Merged across hosts (set_stats aggregates dicts)
+          disk_usage_by_host:
+            "{{ inventory_hostname }}":
+              drive: "{{ disk_usage.DriveLetter }}"
+              size_gb: "{{ disk_usage.SizeGB | float }}"
+              free_gb: "{{ disk_usage.FreeGB | float }}"
+              used_pct: "{{ disk_usage.UsedPct | float }}"
+              free_pct: "{{ (100 - (disk_usage.UsedPct | float)) | round(2) }}"
