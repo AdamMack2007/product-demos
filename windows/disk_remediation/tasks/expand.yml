@@ -19,6 +19,10 @@
 - name: Grow {{ proxmox_disk }} on {{ proxmox_vm_name }} by {{ disk_expand_gb }}G
   community.proxmox.proxmox_disk:
     api_host: "{{ proxmox_api_host }}"
+    # AAP "Proxmox" credential injects api_user / api_password env vars;
+    # falls back to PROXMOX_USER / PROXMOX_PASSWORD when unset.
+    api_user: "{{ lookup('ansible.builtin.env', 'api_user') or omit }}"
+    api_password: "{{ lookup('ansible.builtin.env', 'api_password') or omit }}"
     validate_certs: "{{ proxmox_validate_certs }}"
     name: "{{ proxmox_vm_name }}"
     disk: "{{ proxmox_disk }}"
