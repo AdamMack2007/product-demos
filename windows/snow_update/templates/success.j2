@@ -1,4 +1,9 @@
-Ansible has successfully patched {{ cve_id }} for host {{ host }}.
+{% if kb_download_failed | length > 0 %}
+{% set patch_status = "failed to patch" %}
+{% else %}
+{% set patch_status = "successfully patched" %}
+{% endif %}
+Ansible has {{ patch_status }} {{ cve_id }} for host {{ host }}.
 
 ---- Host Info ----- 
 Host: {{ host }}
