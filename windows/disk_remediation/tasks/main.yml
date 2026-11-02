@@ -1,0 +1,11 @@
+---
+# Entry point: select the remediation path with disk_action
+# (report | cleanup | expand). Each playbook calls tasks_from directly,
+# but this allows a single job template if preferred.
+- name: Validate disk_action
+  ansible.builtin.assert:
+    that: disk_action | default('') in ['report', 'cleanup', 'expand']
+    fail_msg: "disk_action must be one of report, cleanup, expand"
+
+- name: Run selected disk remediation path
+  ansible.builtin.include_tasks: "{{ disk_action }}.yml"

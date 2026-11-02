@@ -1,0 +1,20 @@
+---
+- name: Get volume usage for {{ disk_drive_letter }}
+  ansible.windows.win_powershell:
+    parameters:
+      DriveLetter: "{{ disk_drive_letter }}"
+    script: |
+      param($DriveLetter)
+      $Ansible.Changed = $false
+      $v = Get-Volume -DriveLetter $DriveLetter -ErrorAction Stop
+      [PSCustomObject]@{
+        DriveLetter = $DriveLetter
+        SizeGB      = [math]::Round($v.Size / 1GB, 2)
+        FreeGB      = [math]::Round($v.SizeRemaining / 1GB, 2)
+        UsedPct     = [math]::Round((($v.Size - $v.SizeRemaining) / $v.Size) * 100, 2)
+      }
+  register: disk_usage_raw
+
+- name: Set disk usage fact
+  ansible.builtin.set_fact:
+    "{{ disk_usage_var | default('disk_usage') }}": "{{ disk_usage_raw.output[0] }}"

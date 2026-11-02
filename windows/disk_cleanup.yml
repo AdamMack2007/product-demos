@@ -1,0 +1,10 @@
+---
+- name: "Windows disk remediation - Clear temp directories and caches to reclaim space"
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Run disk cleanup
+      ansible.builtin.include_role:
+        name: disk_remediation
+        tasks_from: cleanup

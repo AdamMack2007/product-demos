@@ -1,0 +1,104 @@
+---
+# Path 1 (< 80% used): read-only. Identify large files and C:\Temp cleanup
+# candidates, then publish the findings for AO / ServiceNow. Nothing is deleted.
+- name: Gather current disk usage
+  ansible.builtin.include_tasks: usage.yml
+
+- name: Find large files
+  ansible.windows.win_powershell:
+    parameters:
+      Paths: "{{ disk_report_scan_paths }}"
+      MinBytes: "{{ (disk_report_min_file_mb | int) * 1048576 }}"
+      Top: "{{ disk_report_top_n | int }}"
+      Exclude: "{{ disk_report_exclude_paths }}"
+    script: |
+      param([string[]]$Paths, [long]$MinBytes, [int]$Top, [string[]]$Exclude)
+      $Ansible.Changed = $false
+      $Paths | ForEach-Object {
+        Get-ChildItem -LiteralPath $_ -File -Recurse -Force -ErrorAction SilentlyContinue
+      } | Where-Object {
+        $f = $_.FullName
+        $_.Length -ge $MinBytes -and -not ($Exclude | Where-Object { $f -like "$_*" })
+      } | Sort-Object Length -Descending | Select-Object -First $Top | ForEach-Object {
+        [PSCustomObject]@{
+          Path         = $_.FullName
+          SizeMB       = [math]::Round($_.Length / 1MB, 1)
+          LastModified = $_.LastWriteTime.ToString('yyyy-MM-dd')
+        }
+      }
+  register: disk_report_large
+
+- name: Find cleanup candidates in temp path
+  ansible.windows.win_powershell:
+    parameters:
+      Path: "{{ disk_report_temp_path }}"
+      AgeDays: "{{ disk_report_temp_age_days | int }}"
+    script: |
+      param([string]$Path, [int]$AgeDays)
+      $Ansible.Changed = $false
+      if (-not (Test-Path -LiteralPath $Path)) {
+        return [PSCustomObject]@{ Exists = $false; FileCount = 0; TotalMB = 0; StaleCount = 0; StaleMB = 0; StaleFiles = @() }
+      }
+      $cutoff = (Get-Date).AddDays(-$AgeDays)
+      $all = @(Get-ChildItem -LiteralPath $Path -File -Recurse -Force -ErrorAction SilentlyContinue)
+      $stale = @($all | Where-Object LastWriteTime -lt $cutoff)
+      [PSCustomObject]@{
+        Exists     = $true
+        FileCount  = $all.Count
+        TotalMB    = [math]::Round((($all | Measure-Object Length -Sum).Sum) / 1MB, 1)
+        StaleCount = $stale.Count
+        StaleMB    = [math]::Round((($stale | Measure-Object Length -Sum).Sum) / 1MB, 1)
+        StaleFiles = @($stale | Sort-Object Length -Descending | Select-Object -First 50 | ForEach-Object {
+          [PSCustomObject]@{
+            Path         = $_.FullName
+            SizeMB       = [math]::Round($_.Length / 1MB, 2)
+            LastModified = $_.LastWriteTime.ToString('yyyy-MM-dd')
+          }
+        })
+      }
+  register: disk_report_temp
+
+- name: Build disk report
+  ansible.builtin.set_fact:
+    disk_report:
+      host: "{{ inventory_hostname }}"
+      action: report
+      usage: "{{ disk_usage }}"
+      large_files: "{{ disk_report_large.output }}"
+      temp_path: "{{ disk_report_temp_path }}"
+      temp_summary: "{{ disk_report_temp.output[0] }}"
+    disk_report_text: "{{ lookup('ansible.builtin.template', 'report.j2') }}"
+
+- name: Show disk report
+  ansible.builtin.debug:
+    msg: "{{ disk_report_text.splitlines() }}"
+
+- name: Publish disk report for Automation Orchestrator / ServiceNow
+  ansible.builtin.set_stats:
+    data:
+      disk_action: report
+      disk_report: "{{ disk_report }}"
+      disk_report_text: "{{ disk_report_text }}"
+
+- name: Write HTML report
+  ansible.builtin.template:
+    src: report.html.j2
+    dest: "{{ disk_report_html_path }}"
+    mode: "0644"
+  delegate_to: localhost
+  vars:
+    disk_report_html_path: &disk_report_html_path >-
+      {{ disk_report_html_dir }}/disk_report_{{ inventory_hostname }}_{{ now(fmt='%Y%m%d') }}.html
+
+- name: Attach HTML report to ServiceNow incident
+  ansible.builtin.include_tasks: snow_incident_update.yml
+  vars:
+    disk_snow_work_notes: |
+      Disk space review completed for {{ inventory_hostname }}. No changes were made.
+      {{ disk_usage.DriveLetter }}: is {{ disk_usage.UsedPct }}% used ({{ disk_usage.FreeGB }} GB free of {{ disk_usage.SizeGB }} GB).
+      Found {{ disk_report.large_files | length }} large files and {{ disk_report.temp_summary.StaleCount }} stale files in {{ disk_report_temp_path }}.
+      See the attached HTML report for details.
+    disk_snow_attachments:
+      - path: *disk_report_html_path
+        name: "Disk Report - {{ inventory_hostname }} - {{ now(fmt='%Y-%m-%d') }}.html"
+        type: text/html

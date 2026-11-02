@@ -1,0 +1,10 @@
+---
+- name: Windows disk remediation - Create ServiceNow incident for disk space alert
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Create disk space incident
+      ansible.builtin.include_role:
+        name: disk_remediation
+        tasks_from: snow_incident_create

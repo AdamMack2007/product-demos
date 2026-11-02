@@ -1,0 +1,21 @@
+Disk space review for {{ inventory_hostname }} ({{ disk_usage.DriveLetter }}:)
+Usage: {{ disk_usage.UsedPct }}% used, {{ disk_usage.FreeGB }} GB free of {{ disk_usage.SizeGB }} GB
+No changes were made. The items below are candidates for review.
+
+---- Largest files (>= {{ disk_report_min_file_mb }} MB) ----
+{% for f in disk_report.large_files %}
+{{ '%10s' | format(f.SizeMB ~ ' MB') }}  {{ f.LastModified }}  {{ f.Path }}
+{% else %}
+None found
+{% endfor %}
+
+---- {{ disk_report_temp_path }} ----
+{% if disk_report.temp_summary.Exists %}
+Total: {{ disk_report.temp_summary.FileCount }} files, {{ disk_report.temp_summary.TotalMB }} MB
+Older than {{ disk_report_temp_age_days }} days: {{ disk_report.temp_summary.StaleCount }} files, {{ disk_report.temp_summary.StaleMB }} MB
+{% for f in disk_report.temp_summary.StaleFiles %}
+{{ '%10s' | format(f.SizeMB ~ ' MB') }}  {{ f.LastModified }}  {{ f.Path }}
+{% endfor %}
+{% else %}
+Path does not exist
+{% endif %}

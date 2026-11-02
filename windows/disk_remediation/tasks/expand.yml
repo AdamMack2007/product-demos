@@ -1,0 +1,121 @@
+---
+# Path 3 (> 95% used): grow the Proxmox virtual disk, then extend the
+# Windows partition into the new space.
+- name: Validate expansion request
+  ansible.builtin.assert:
+    that:
+      - proxmox_vm_name in proxmox_allowed_vms
+      - disk_expand_gb | int > 0
+      - disk_expand_gb | int <= disk_expand_max_gb | int
+    fail_msg: >-
+      Refusing to expand: VM '{{ proxmox_vm_name }}' must be one of {{ proxmox_allowed_vms }}
+      and disk_expand_gb ({{ disk_expand_gb }}) must be between 1 and {{ disk_expand_max_gb }}.
+
+- name: Gather disk usage before expansion
+  ansible.builtin.include_tasks: usage.yml
+  vars:
+    disk_usage_var: disk_usage_before
+
+- name: Grow {{ proxmox_disk }} on {{ proxmox_vm_name }} by {{ disk_expand_gb }}G
+  community.proxmox.proxmox_disk:
+    api_host: "{{ proxmox_api_host }}"
+    validate_certs: "{{ proxmox_validate_certs }}"
+    name: "{{ proxmox_vm_name }}"
+    disk: "{{ proxmox_disk }}"
+    size: "+{{ disk_expand_gb | int }}G"
+    state: resized
+  delegate_to: localhost
+  register: disk_expand_pve
+
+- name: Check for unallocated space behind {{ disk_drive_letter }}
+  ansible.windows.win_powershell: &disk_expand_check
+    parameters:
+      DriveLetter: "{{ disk_drive_letter }}"
+    script: |
+      param($DriveLetter)
+      $Ansible.Changed = $false
+      Update-HostStorageCache
+      $p = Get-Partition -DriveLetter $DriveLetter
+      $p | Get-Disk | Update-Disk
+      $max = (Get-PartitionSupportedSize -DriveLetter $DriveLetter).SizeMax
+      [PSCustomObject]@{
+        CurrentBytes = $p.Size
+        MaxBytes     = $max
+        GrowableGB   = [math]::Round(($max - $p.Size) / 1GB, 2)
+      }
+  register: disk_expand_check
+
+# IDE disks do not signal capacity changes to a running guest, so Windows
+# typically needs a reboot to see the new size.
+- name: Reboot so Windows detects the new disk size
+  when:
+    - disk_expand_check.output[0].GrowableGB | float < 1
+    - disk_expand_reboot_if_needed | bool
+  block:
+    - name: Reboot host
+      ansible.windows.win_reboot:
+        msg: "Ansible: rebooting to detect expanded disk"
+        reboot_timeout: 900
+
+    - name: Re-check for unallocated space after reboot
+      ansible.windows.win_powershell: *disk_expand_check
+      register: disk_expand_recheck
+
+- name: Determine growable space
+  ansible.builtin.set_fact:
+    disk_expand_growable_gb: >-
+      {{ (disk_expand_recheck.output | default(disk_expand_check.output))[0].GrowableGB | float }}
+
+- name: Fail if no space is available to extend into
+  ansible.builtin.assert:
+    that: disk_expand_growable_gb | float >= 1
+    fail_msg: >-
+      The Proxmox disk was resized but {{ disk_drive_letter }}: cannot be extended.
+      Check for a partition (e.g. Recovery) located after {{ disk_drive_letter }}:
+      or reboot the host if disk_expand_reboot_if_needed is false.
+
+- name: Extend {{ disk_drive_letter }} partition to maximum size
+  ansible.windows.win_powershell:
+    parameters:
+      DriveLetter: "{{ disk_drive_letter }}"
+    script: |
+      param($DriveLetter)
+      $max = (Get-PartitionSupportedSize -DriveLetter $DriveLetter).SizeMax
+      Resize-Partition -DriveLetter $DriveLetter -Size $max -ErrorAction Stop
+      $Ansible.Changed = $true
+
+- name: Gather disk usage after expansion
+  ansible.builtin.include_tasks: usage.yml
+  vars:
+    disk_usage_var: disk_usage_after
+
+- name: Build expansion summary
+  ansible.builtin.set_fact:
+    disk_expand_summary:
+      host: "{{ inventory_hostname }}"
+      action: expand
+      proxmox_host: "{{ proxmox_api_host }}"
+      vm: "{{ proxmox_vm_name }}"
+      disk: "{{ proxmox_disk }}"
+      added_gb: "{{ disk_expand_gb | int }}"
+      before: "{{ disk_usage_before }}"
+      after: "{{ disk_usage_after }}"
+
+- name: Show expansion summary
+  ansible.builtin.debug:
+    var: disk_expand_summary
+
+- name: Publish expansion summary for Automation Orchestrator / ServiceNow
+  ansible.builtin.set_stats:
+    data:
+      disk_action: expand
+      disk_expand_summary: "{{ disk_expand_summary }}"
+
+- name: Update ServiceNow incident with expansion results
+  ansible.builtin.include_tasks: snow_incident_update.yml
+  vars:
+    disk_snow_work_notes: |
+      Disk expansion completed on {{ inventory_hostname }}.
+      Proxmox: {{ proxmox_api_host }} / VM {{ proxmox_vm_name }} / {{ proxmox_disk }} grown by {{ disk_expand_gb }} GB
+      Before: {{ disk_usage_before.SizeGB }} GB, {{ disk_usage_before.UsedPct }}% used, {{ disk_usage_before.FreeGB }} GB free
+      After:  {{ disk_usage_after.SizeGB }} GB, {{ disk_usage_after.UsedPct }}% used, {{ disk_usage_after.FreeGB }} GB free

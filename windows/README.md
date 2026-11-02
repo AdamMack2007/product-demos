@@ -27,6 +27,9 @@ We are currently investigating an intermittent connectivity issue related to the
 - [**WINDOWS / Create Active Directory Domain**](create_ad_domain.yml) - Create a new AD Domain
 - [**WINDOWS / Helpdesk new user portal**](helpdesk_new_user_portal.yml) - Create user in AD Domain
 - [**WINDOWS / Join Active Directory Domain**](join_ad_domain.yml) - Join computer to AD Domain
+- [**WINDOWS / Disk Report**](disk_report.yml) - Report large files and `C:\Temp` cleanup candidates without making changes (disk < 80% used)
+- [**WINDOWS / Disk Cleanup**](disk_cleanup.yml) - Purge temp directories, Windows Update cache and recycle bin (disk 80-95% used)
+- [**WINDOWS / Disk Expand**](disk_expand.yml) - Grow the Proxmox disk (`ide0` on pve2) and extend `C:` (disk > 95% used)
 
 ### Workflows
 - [**Setup Active Directory Domain**](setup_domain_workflow.md) - A workflow to create a domain controller with two domain-joined Windows hosts

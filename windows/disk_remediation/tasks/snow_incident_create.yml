@@ -1,0 +1,46 @@
+---
+# Create the ServiceNow incident for a disk space alert and publish its
+# number so later Automation Orchestrator steps can update it.
+- name: Gather current disk usage
+  ansible.builtin.include_tasks: usage.yml
+
+- name: Create ServiceNow incident
+  servicenow.itsm.incident:
+    instance: "{{ disk_snow_instance }}"
+    state: new
+    caller: "{{ disk_snow_caller }}"
+    impact: "{{ disk_snow_impact }}"
+    urgency: "{{ disk_snow_urgency }}"
+    short_description: >-
+      Disk space alert: {{ disk_usage.DriveLetter }}: {{ disk_usage.UsedPct }}% used on {{ inventory_hostname }}
+    description: |
+      {{ disk_alert_source }} raised a disk space alert for {{ inventory_hostname }}.
+
+      Drive:     {{ disk_usage.DriveLetter }}:
+      Size:      {{ disk_usage.SizeGB }} GB
+      Free:      {{ disk_usage.FreeGB }} GB
+      Used:      {{ disk_usage.UsedPct }}%
+      {% if disk_alert_details | length > 0 %}
+
+      Alert details:
+      {{ disk_alert_details }}
+      {% endif %}
+
+      Ansible Automation Platform is evaluating and remediating this alert.
+    other:
+      assignment_group: "{{ disk_snow_assignment_group if disk_snow_assignment_group | length > 0 else omit }}"
+      cmdb_ci: "{{ inventory_hostname }}"
+  delegate_to: localhost
+  register: disk_snow_incident
+
+- name: Show incident number
+  ansible.builtin.debug:
+    msg: "Created {{ disk_snow_incident.record.number }} for {{ inventory_hostname }}"
+
+- name: Publish incident for Automation Orchestrator
+  ansible.builtin.set_stats:
+    aggregate: true
+    data:
+      disk_incidents: "{{ {inventory_hostname: disk_snow_incident.record.number} }}"
+      disk_incident_number: "{{ disk_snow_incident.record.number }}"
+      disk_incident_sys_id: "{{ disk_snow_incident.record.sys_id }}"

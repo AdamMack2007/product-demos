@@ -1,0 +1,91 @@
+---
+# Drive letter being remediated (no colon)
+disk_drive_letter: C
+
+# --- Report path (< 80%) -------------------------------------------------
+# Root(s) to scan for large files
+disk_report_scan_paths:
+  - 'C:\'
+# Files larger than this (MB) are reported
+disk_report_min_file_mb: 500
+# Max number of large files to report
+disk_report_top_n: 25
+# Directory reviewed for cleanup candidates
+disk_report_temp_path: 'C:\Temp'
+# Files in the temp path older than this many days are flagged as candidates
+disk_report_temp_age_days: 7
+# Paths excluded from the large file scan
+disk_report_exclude_paths:
+  - 'C:\Windows\WinSxS'
+  - 'C:\pagefile.sys'
+  - 'C:\hiberfil.sys'
+  - 'C:\swapfile.sys'
+  - 'C:\System Volume Information'
+
+# --- Cleanup path (80-95%) -----------------------------------------------
+# Directories whose contents are purged
+disk_cleanup_paths:
+  - 'C:\Temp'
+  - 'C:\Windows\Temp'
+# Also purge each user profile's AppData\Local\Temp
+disk_cleanup_user_temp: true
+# Purge the Windows Update download cache (stops/starts wuauserv)
+disk_cleanup_wu_cache: true
+# Empty the recycle bin
+disk_cleanup_recycle_bin: true
+# Only delete files older than this many days (0 = everything)
+disk_cleanup_min_age_days: 0
+
+# --- Expand path (> 95%) -------------------------------------------------
+proxmox_api_host: pve2.mackdev.net
+proxmox_validate_certs: false
+# proxmox_api_user / proxmox_api_token_id / proxmox_api_token_secret /
+# proxmox_api_password may be supplied as vars or via PROXMOX_* env vars
+# from an AAP credential.
+
+# Proxmox VM name; defaults to the short hostname (win1, win2, ...)
+proxmox_vm_name: "{{ inventory_hostname_short }}"
+# VMs this role is permitted to resize
+proxmox_allowed_vms:
+  - win1
+  - win2
+  - win3
+  - win4
+# Proxmox disk backing the C: drive
+proxmox_disk: ide0
+# GB to add to the disk (AO passes this based on its threshold logic)
+disk_expand_gb: 10
+# Safety cap on a single expansion
+disk_expand_max_gb: 50
+# IDE disks usually need a reboot before Windows sees new capacity
+disk_expand_reboot_if_needed: true
+
+# --- ServiceNow -----------------------------------------------------------
+# Connection: snow_host (https://instance.service-now.com), snow_user and
+# snow_password, or SN_HOST / SN_USERNAME / SN_PASSWORD env vars from the
+# AAP ServiceNow credential type.
+disk_snow_instance:
+  host: "{{ snow_host | default(omit) }}"
+  username: "{{ snow_user | default(omit) }}"
+  password: "{{ snow_password | default(omit) }}"
+
+# Incident creation
+disk_snow_caller: admin
+disk_snow_impact: medium
+disk_snow_urgency: medium
+disk_snow_assignment_group: ""
+# Where the alert came from (Dynatrace, Alertmanager, ...), passed by AO
+disk_alert_source: Monitoring
+# Free-form alert detail passed by AO (problem ID, alert name, link, ...)
+disk_alert_details: ""
+
+# Incident to update. AO can pass disk_incident_number directly; otherwise it
+# is looked up from the disk_incidents artifact published by disk_snow_incident.yml
+disk_incident_number: "{{ (disk_incidents | default({}))[inventory_hostname] | default('') }}"
+
+# --- HTML report ------------------------------------------------------------
+# Directory on the controller / EE where the HTML report is written
+disk_report_html_dir: /tmp
+# Visual thresholds for the usage bar colour in the HTML report only
+disk_report_html_warn_pct: 80
+disk_report_html_crit_pct: 95

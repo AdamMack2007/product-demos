@@ -1,0 +1,123 @@
+---
+# Path 2 (80-95% used): purge temp directories and caches to reclaim space.
+- name: Gather disk usage before cleanup
+  ansible.builtin.include_tasks: usage.yml
+  vars:
+    disk_usage_var: disk_usage_before
+
+- name: Build list of directories to purge
+  ansible.windows.win_powershell:
+    parameters:
+      Paths: "{{ disk_cleanup_paths }}"
+      IncludeUserTemp: "{{ disk_cleanup_user_temp | bool }}"
+    script: |
+      param([string[]]$Paths, [bool]$IncludeUserTemp)
+      $Ansible.Changed = $false
+      $list = [System.Collections.Generic.List[string]]::new()
+      $Paths | Where-Object { Test-Path -LiteralPath $_ } | ForEach-Object { $list.Add($_) }
+      if ($IncludeUserTemp) {
+        Get-ChildItem -LiteralPath 'C:\Users' -Directory -Force -ErrorAction SilentlyContinue |
+          ForEach-Object { Join-Path $_.FullName 'AppData\Local\Temp' } |
+          Where-Object { Test-Path -LiteralPath $_ } |
+          ForEach-Object { $list.Add($_) }
+      }
+      $list
+  register: disk_cleanup_targets
+
+- name: Purge temp directory contents
+  ansible.windows.win_powershell:
+    parameters:
+      Path: "{{ item }}"
+      AgeDays: "{{ disk_cleanup_min_age_days | int }}"
+    script: |
+      param([string]$Path, [int]$AgeDays)
+      $cutoff = (Get-Date).AddDays(-$AgeDays)
+      $files = @(Get-ChildItem -LiteralPath $Path -File -Recurse -Force -ErrorAction SilentlyContinue |
+        Where-Object { $AgeDays -eq 0 -or $_.LastWriteTime -lt $cutoff })
+      $freed = 0; $removed = 0; $skipped = 0
+      foreach ($f in $files) {
+        try {
+          $len = $f.Length
+          Remove-Item -LiteralPath $f.FullName -Force -ErrorAction Stop
+          $freed += $len; $removed++
+        } catch { $skipped++ }  # in use / access denied
+      }
+      # Remove now-empty subdirectories (deepest first), keep the root
+      Get-ChildItem -LiteralPath $Path -Directory -Recurse -Force -ErrorAction SilentlyContinue |
+        Sort-Object { $_.FullName.Length } -Descending |
+        Where-Object { -not (Get-ChildItem -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue) } |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+      $Ansible.Changed = $removed -gt 0
+      [PSCustomObject]@{ Path = $Path; Removed = $removed; Skipped = $skipped; FreedMB = [math]::Round($freed / 1MB, 1) }
+  loop: "{{ disk_cleanup_targets.output }}"
+  register: disk_cleanup_temp
+
+- name: Purge Windows Update download cache
+  when: disk_cleanup_wu_cache | bool
+  ansible.windows.win_powershell:
+    script: |
+      $path = 'C:\Windows\SoftwareDistribution\Download'
+      $svc = Get-Service wuauserv
+      $wasRunning = $svc.Status -eq 'Running'
+      $before = (Get-ChildItem $path -Recurse -Force -File -ErrorAction SilentlyContinue | Measure-Object Length -Sum).Sum
+      if ($wasRunning) { Stop-Service wuauserv -Force -ErrorAction Stop }
+      try {
+        Get-ChildItem $path -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+      } finally {
+        if ($wasRunning) { Start-Service wuauserv }
+      }
+      $after = (Get-ChildItem $path -Recurse -Force -File -ErrorAction SilentlyContinue | Measure-Object Length -Sum).Sum
+      $Ansible.Changed = $before -gt $after
+      [PSCustomObject]@{ Path = $path; FreedMB = [math]::Round(($before - $after) / 1MB, 1) }
+  register: disk_cleanup_wu
+
+- name: Empty recycle bin
+  when: disk_cleanup_recycle_bin | bool
+  ansible.windows.win_powershell:
+    parameters:
+      DriveLetter: "{{ disk_drive_letter }}"
+    script: |
+      param($DriveLetter)
+      Clear-RecycleBin -DriveLetter $DriveLetter -Force -ErrorAction SilentlyContinue
+      $Ansible.Changed = $true
+
+- name: Gather disk usage after cleanup
+  ansible.builtin.include_tasks: usage.yml
+  vars:
+    disk_usage_var: disk_usage_after
+
+- name: Build cleanup summary
+  ansible.builtin.set_fact:
+    disk_cleanup_summary:
+      host: "{{ inventory_hostname }}"
+      action: cleanup
+      before: "{{ disk_usage_before }}"
+      after: "{{ disk_usage_after }}"
+      reclaimed_gb: "{{ ((disk_usage_after.FreeGB | float) - (disk_usage_before.FreeGB | float)) | round(2) }}"
+      directories: "{{ disk_cleanup_temp.results | map(attribute='output') | flatten }}"
+      wu_cache: "{{ (disk_cleanup_wu.output | default([{}]))[0] }}"
+
+- name: Show cleanup summary
+  ansible.builtin.debug:
+    var: disk_cleanup_summary
+
+- name: Publish cleanup summary for Automation Orchestrator / ServiceNow
+  ansible.builtin.set_stats:
+    data:
+      disk_action: cleanup
+      disk_cleanup_summary: "{{ disk_cleanup_summary }}"
+
+- name: Update ServiceNow incident with cleanup results
+  ansible.builtin.include_tasks: snow_incident_update.yml
+  vars:
+    disk_snow_work_notes: |
+      Disk cleanup completed on {{ inventory_hostname }}.
+      Before: {{ disk_usage_before.UsedPct }}% used, {{ disk_usage_before.FreeGB }} GB free
+      After:  {{ disk_usage_after.UsedPct }}% used, {{ disk_usage_after.FreeGB }} GB free
+      Reclaimed: {{ disk_cleanup_summary.reclaimed_gb }} GB
+      {% for d in disk_cleanup_summary.directories %}
+      - {{ d.Path }}: {{ d.Removed }} files removed ({{ d.FreedMB }} MB), {{ d.Skipped }} in use
+      {% endfor %}
+      {% if disk_cleanup_summary.wu_cache.Path is defined %}
+      - {{ disk_cleanup_summary.wu_cache.Path }}: {{ disk_cleanup_summary.wu_cache.FreedMB }} MB
+      {% endif %}

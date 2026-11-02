@@ -1,0 +1,10 @@
+---
+- name: "Windows disk remediation - Expand the Proxmox disk and extend the C: partition"
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Run disk expand
+      ansible.builtin.include_role:
+        name: disk_remediation
+        tasks_from: expand

@@ -1,0 +1,18 @@
+---
+# Add work notes (and optional attachments) to the disk alert incident.
+# Expects disk_snow_work_notes and optionally disk_snow_attachments.
+- name: Skip ServiceNow update when no incident is known
+  ansible.builtin.debug:
+    msg: "No disk_incident_number for {{ inventory_hostname }}; skipping ServiceNow update"
+  when: disk_incident_number | length == 0
+
+- name: Update ServiceNow incident {{ disk_incident_number }}
+  when: disk_incident_number | length > 0
+  servicenow.itsm.incident:
+    instance: "{{ disk_snow_instance }}"
+    number: "{{ disk_incident_number }}"
+    state: "{{ disk_snow_state | default('in_progress') }}"
+    attachments: "{{ disk_snow_attachments | default(omit) }}"
+    other:
+      work_notes: "{{ disk_snow_work_notes }}"
+  delegate_to: localhost
