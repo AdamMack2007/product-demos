@@ -1,0 +1,31 @@
+- name: Set workflow name as fact
+  ansible.builtin.set_fact:
+    workflow_name: "{{ ansible_eda.event.payload.ao_workflow_name }}"
+
+- name: Set workflow data as fact
+  ansible.builtin.set_fact:
+    workflow_data: "{{ workflows[workflow_name] }}"
+
+- name: Obtain OAuth token
+  ansible.builtin.uri:
+    url: "{{ webhook_url_base }}/api/v1/auth/token"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      grant_type: client_credentials
+      client_id: "{{ oauth_client_id }}"
+      client_secret: "{{ oauth_client_secret }}"
+    status_code: 200
+  register: token_response
+
+- name: Post event payload to AO Webhook
+  ansible.builtin.uri:
+    url: "{{ workflow_data.url }}"
+    method: POST
+    body_format: json
+    headers:
+      Authorization: "Bearer {{ token_response.json.access_token }}"
+      Content-Type: application/json
+    body: "{{ workflow_data.vars }}"
+    status_code: 202
+  register: webhook_response
