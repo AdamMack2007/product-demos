@@ -20,10 +20,6 @@
         cve_id: "{{ ansible_eda.event.payload.cve_id }}"
         ritm: "{{ ansible_eda.event.payload.ritm }}"
 
-- name: Set workflow data as fact
-  ansible.builtin.set_fact:
-    workflow_data: "{{ workflows[ao_workflow_name] }}"
-
 - name: Obtain OAuth token
   ansible.builtin.uri:
     url: "{{ webhook_url_base }}/api/v1/auth/token"
