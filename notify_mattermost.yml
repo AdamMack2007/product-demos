@@ -1,0 +1,12 @@
+- name: Notify Mattermost
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    mattermost_webhook_url: "https://mattermost.mackdev.net/hooks/tay56wxizi87z8tq3bbrxfqzxr"
+  tasks:
+    - name: Send Mattermost notification
+      community.general.mattermost:
+        url: "{{ mattermost_webhook_url }}"
+        text: "{{ mattermost_message }}"
+        channel: "DevOps"
