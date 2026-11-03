@@ -1,24 +1,22 @@
 - name: Set Workflow Vars as fact
   when: ao_workflow_name == "win_disk_job"
   ansible.builtin.set_fact:
-    win_disk_job:
-      url: "https://orchestrator.apps.mackdev.net/api/v1/webhooks/eda/dce2d552-2b2d-4e90-bd6b-6793b6b09a42"
-      vars:
-        event_status: "{{ ansible_eda.event.payload.event_status }}"
-        event_name: "{{ ansible_eda.event.payload.event_name }}"
-        disk: "{{ ansible_eda.event.payload.disk }}"
-        host: "{{ ansible_eda.event.payload.hostname }}"
-        alert_service: "Dynatrace"
+    ao_url: "https://orchestrator.apps.mackdev.net/api/v1/webhooks/eda/dce2d552-2b2d-4e90-bd6b-6793b6b09a42"
+    ao_vars:
+      event_status: "{{ ansible_eda.event.payload.event_status }}"
+      event_name: "{{ ansible_eda.event.payload.event_name }}"
+      disk: "{{ ansible_eda.event.payload.disk }}"
+      host: "{{ ansible_eda.event.payload.hostname }}"
+      alert_service: "Dynatrace"
 
 - name: Set Workflow Vars as fact
   when: ao_workflow_name == "win_cve_job"
   ansible.builtin.set_fact:
-    win_cve_job:
-      url: "https://orchestrator.apps.mackdev.net/api/v1/webhooks/15735822-b025-4555-aaa9-d1c86ebde1dd"
-      vars:
-        host: "{{ ansible_eda.event.payload.host }}"
-        cve_id: "{{ ansible_eda.event.payload.cve_id }}"
-        ritm: "{{ ansible_eda.event.payload.ritm }}"
+    ao_url: "https://orchestrator.apps.mackdev.net/api/v1/webhooks/15735822-b025-4555-aaa9-d1c86ebde1dd"
+    ao_vars:
+      host: "{{ ansible_eda.event.payload.host }}"
+      cve_id: "{{ ansible_eda.event.payload.cve_id }}"
+      ritm: "{{ ansible_eda.event.payload.ritm }}"
 
 - name: Obtain OAuth token
   ansible.builtin.uri:
@@ -34,12 +32,12 @@
 
 - name: Post event payload to AO Webhook
   ansible.builtin.uri:
-    url: "{{ workflow_data.url }}"
+    url: "{{ ao_url }}"
     method: POST
     body_format: json
     headers:
       Authorization: "Bearer {{ token_response.json.access_token }}"
       Content-Type: application/json
-    body: "{{ workflow_data.vars }}"
+    body: "{{ ao_vars }}"
     status_code: 202
   register: webhook_response
