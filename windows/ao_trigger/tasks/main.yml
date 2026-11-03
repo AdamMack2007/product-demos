@@ -1,10 +1,6 @@
-- name: Set workflow name as fact
-  ansible.builtin.set_fact:
-    workflow_name: "{{ ansible_eda.event.payload.ao_workflow_name }}"
-
 - name: Set workflow data as fact
   ansible.builtin.set_fact:
-    workflow_data: "{{ workflows[workflow_name] }}"
+    workflow_data: "{{ workflows[ao_workflow_name] }}"
 
 - name: Obtain OAuth token
   ansible.builtin.uri:
