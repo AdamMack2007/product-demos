@@ -30,6 +30,8 @@
 
 - name: Find cleanup candidates in temp path
   ansible.windows.win_powershell:
+    # StaleFiles items sit at depth 3; the default (2) flattens them to "@{...}" strings
+    depth: 3
     parameters:
       Path: "{{ disk_report_temp_path }}"
       AgeDays: "{{ disk_report_temp_age_days | int }}"
