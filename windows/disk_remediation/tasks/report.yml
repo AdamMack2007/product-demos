@@ -67,6 +67,11 @@
       large_files: "{{ disk_report_large.output }}"
       temp_path: "{{ disk_report_temp_path }}"
       temp_summary: "{{ disk_report_temp.output[0] }}"
+
+# Separate task: set_fact templates all args before assigning any, so
+# report.j2 can't see disk_report if it's set in the same task.
+- name: Render disk report text
+  ansible.builtin.set_fact:
     disk_report_text: "{{ lookup('ansible.builtin.template', 'report.j2') }}"
 
 - name: Show disk report
