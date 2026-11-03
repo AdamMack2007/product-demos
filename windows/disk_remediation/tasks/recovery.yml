@@ -1,0 +1,102 @@
+---
+# Remove the Windows Recovery (WinRE) partition when it sits directly after
+# the OS partition and blocks extending it into newly added disk space.
+# WinRE is disabled first, which moves winre.wim back onto the OS volume,
+# and is re-enabled afterwards so recovery keeps working from C:\Recovery.
+- name: Find the partition following {{ disk_drive_letter }}
+  ansible.windows.win_powershell:
+    parameters:
+      DriveLetter: "{{ disk_drive_letter }}"
+    script: |
+      param($DriveLetter)
+      $Ansible.Changed = $false
+      $os = Get-Partition -DriveLetter $DriveLetter -ErrorAction Stop
+      $next = Get-Partition -DiskNumber $os.DiskNumber |
+        Where-Object { $_.Offset -gt $os.Offset } |
+        Sort-Object Offset |
+        Select-Object -First 1
+
+      $m = reagentc.exe /info | Select-String 'Windows RE status:\s+(\w+)'
+      $winre = if ($m) { $m.Matches[0].Groups[1].Value } else { 'Unknown' }
+
+      if ($null -eq $next) {
+        return [PSCustomObject]@{ Found = $false; IsRecovery = $false; WinREStatus = $winre }
+      }
+
+      [PSCustomObject]@{
+        Found           = $true
+        # GPT Recovery type GUID, or MBR partition type 0x27
+        IsRecovery      = ($next.GptType -eq '{de94bba4-06d1-4d40-a16a-bfd50179d6ac}') -or ($next.MbrType -eq 39)
+        DiskNumber      = $next.DiskNumber
+        PartitionNumber = $next.PartitionNumber
+        Offset          = $next.Offset
+        Type            = [string]$next.Type
+        SizeMB          = [math]::Round($next.Size / 1MB)
+        WinREStatus     = $winre
+      }
+  register: disk_recovery_info
+
+- name: Set recovery partition facts
+  ansible.builtin.set_fact:
+    disk_recovery: "{{ disk_recovery_info.output[0] }}"
+
+- name: Fail if a non-recovery partition follows {{ disk_drive_letter }}
+  ansible.builtin.fail:
+    msg: >-
+      Partition {{ disk_recovery.PartitionNumber }} ({{ disk_recovery.Type }}, {{ disk_recovery.SizeMB }} MB)
+      follows {{ disk_drive_letter }}: and is not a Recovery partition. Refusing to delete it;
+      {{ disk_drive_letter }}: cannot be extended until it is moved or removed manually.
+  when:
+    - disk_recovery.Found | bool
+    - not disk_recovery.IsRecovery | bool
+
+- name: Remove recovery partition {{ disk_recovery.PartitionNumber | default('') }}
+  when:
+    - disk_recovery.Found | bool
+    - disk_recovery.IsRecovery | bool
+  block:
+    - name: Validate recovery partition size
+      ansible.builtin.assert:
+        that: disk_recovery.SizeMB | int <= disk_recovery_max_mb | int
+        fail_msg: >-
+          Recovery partition is {{ disk_recovery.SizeMB }} MB, larger than
+          disk_recovery_max_mb ({{ disk_recovery_max_mb }} MB). Refusing to delete it.
+
+    - name: Disable Windows RE
+      ansible.windows.win_command: reagentc.exe /disable
+      when: disk_recovery.WinREStatus == 'Enabled'
+
+    - name: Delete recovery partition
+      ansible.windows.win_powershell:
+        parameters:
+          DiskNumber: "{{ disk_recovery.DiskNumber }}"
+          Offset: "{{ disk_recovery.Offset }}"
+        script: |
+          param([uint32]$DiskNumber, [uint64]$Offset)
+          # Re-select by offset and re-verify the type so a renumbered
+          # partition can never be deleted by mistake.
+          $p = Get-Partition -DiskNumber $DiskNumber | Where-Object { $_.Offset -eq $Offset }
+          if (-not $p) { throw "No partition at offset $Offset on disk $DiskNumber" }
+          if (-not (($p.GptType -eq '{de94bba4-06d1-4d40-a16a-bfd50179d6ac}') -or ($p.MbrType -eq 39))) {
+            throw "Partition $($p.PartitionNumber) at offset $Offset is no longer a Recovery partition"
+          }
+          Remove-Partition -DiskNumber $DiskNumber -PartitionNumber $p.PartitionNumber -Confirm:$false -ErrorAction Stop
+          $Ansible.Changed = $true
+
+    - name: Re-enable Windows RE on the OS volume
+      ansible.windows.win_command: reagentc.exe /enable
+      when:
+        - disk_recovery.WinREStatus == 'Enabled'
+        - disk_recovery_reenable_winre | bool
+      register: disk_recovery_winre_enable
+      failed_when: false
+
+    - name: Warn if Windows RE could not be re-enabled
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: reagentc /enable failed (rc={{ disk_recovery_winre_enable.rc }}):
+          {{ disk_recovery_winre_enable.stdout | default('') | trim }}
+          Disk expansion will continue; re-enable WinRE manually.
+      when:
+        - disk_recovery_winre_enable is not skipped
+        - disk_recovery_winre_enable.rc | default(0) != 0

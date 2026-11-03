@@ -31,6 +31,11 @@
   delegate_to: localhost
   register: disk_expand_pve
 
+# A Recovery partition after C: blocks it from growing into the new space.
+- name: Remove recovery partition blocking {{ disk_drive_letter }}
+  ansible.builtin.include_tasks: recovery.yml
+  when: disk_expand_remove_recovery | bool
+
 - name: Check for unallocated space behind {{ disk_drive_letter }}
   ansible.windows.win_powershell: &disk_expand_check
     parameters:

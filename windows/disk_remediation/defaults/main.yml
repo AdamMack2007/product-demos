@@ -59,6 +59,13 @@ disk_expand_gb: 10
 disk_expand_max_gb: 50
 # IDE disks usually need a reboot before Windows sees new capacity
 disk_expand_reboot_if_needed: true
+# Delete a Recovery partition located directly after the OS partition so the
+# OS partition can be extended. Non-recovery partitions are never deleted.
+disk_expand_remove_recovery: true
+# Refuse to delete a "recovery" partition larger than this (MB)
+disk_recovery_max_mb: 2048
+# Re-enable WinRE (relocated to C:\Recovery) after deleting the partition
+disk_recovery_reenable_winre: true
 
 # --- ServiceNow -----------------------------------------------------------
 # Connection: snow_host (https://instance.service-now.com), snow_user and
