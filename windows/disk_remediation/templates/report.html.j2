@@ -41,7 +41,10 @@
   .usage-bar { height: 22px; background: var(--track); border-radius: 11px; overflow: hidden; }
   .usage-bar > div { height: 100%; border-radius: 11px; }
   .usage-bar .ok { background: var(--ok); } .usage-bar .warn { background: var(--warn); } .usage-bar .crit { background: var(--crit); }
-  .usage-legend { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .usage-legend { position: relative; height: 18px; color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .usage-legend span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .usage-legend span:first-child { transform: none; }
+  .usage-legend span:last-child { transform: translateX(-100%); }
   table { width: 100%; border-collapse: collapse; }
   th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
        border-bottom: 2px solid var(--border); padding: 8px 10px; }
@@ -83,7 +86,7 @@
     <h2>Drive {{ u.DriveLetter }}: usage <span class="pill {{ level }}">{{ {'ok': 'Healthy', 'warn': 'Warning', 'crit': 'Critical'}[level] }}</span></h2>
     <p class="desc">{{ ((u.SizeGB | float) - (u.FreeGB | float)) | round(2) }} GB used of {{ u.SizeGB }} GB</p>
     <div class="usage-bar"><div class="{{ level }}" style="width: {{ [pct, 100] | min }}%"></div></div>
-    <div class="usage-legend"><span>0%</span><span>{{ disk_report_html_warn_pct }}%</span><span>{{ disk_report_html_crit_pct }}%</span><span>100%</span></div>
+    <div class="usage-legend"><span style="left: 0%">0%</span><span style="left: {{ disk_report_html_warn_pct }}%">{{ disk_report_html_warn_pct }}%</span><span style="left: {{ disk_report_html_crit_pct }}%">{{ disk_report_html_crit_pct }}%</span><span style="left: 100%">100%</span></div>
   </section>
 
   <section>
