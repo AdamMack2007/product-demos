@@ -31,8 +31,9 @@
   delegate_to: localhost
   register: disk_expand_pve
 
-# A Recovery partition after C: blocks it from growing into the new space.
-- name: Remove recovery partition blocking {{ disk_drive_letter }}
+# A Recovery or blank partition (or an MBR extended container holding only
+# those) after C: blocks it from growing into the new space.
+- name: Remove recovery/blank partitions blocking {{ disk_drive_letter }}
   ansible.builtin.include_tasks: recovery.yml
   when: disk_expand_remove_recovery | bool
 

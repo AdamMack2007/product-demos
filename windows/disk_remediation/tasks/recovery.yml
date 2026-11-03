@@ -1,14 +1,65 @@
 ---
-# Remove the Windows Recovery (WinRE) partition when it sits directly after
-# the OS partition and blocks extending it into newly added disk space.
+# Clear partitions that sit directly after the OS partition and block it from
+# being extended into newly added disk space. Only these are ever deleted:
+#   - Windows Recovery (WinRE) partitions (GPT recovery GUID / MBR type 0x27)
+#   - Blank partitions: no drive letter and no filesystem (RAW/unformatted)
+#   - An MBR extended container that is empty or holds only the above
+# Anything else is left in place and the expansion continues.
 # WinRE is disabled first, which moves winre.wim back onto the OS volume,
 # and is re-enabled afterwards so recovery keeps working from C:\Recovery.
+
+# PowerShell helpers shared by the scan and delete steps, so the delete step
+# re-applies exactly the same safety rules immediately before removing.
+- name: Define partition classification helpers
+  ansible.builtin.set_fact:
+    disk_recovery_pslib: |
+      function Test-Recovery($p) {
+        ($p.GptType -eq '{de94bba4-06d1-4d40-a16a-bfd50179d6ac}') -or ($p.MbrType -eq 39)
+      }
+      # MBR extended container: 0x05 (CHS) or 0x0F (LBA, "XINT13 Extended")
+      function Test-Extended($p) { $p.MbrType -in 5, 15 }
+      function Get-PartKind($p) {
+        if (Test-Recovery $p) { return 'Recovery' }
+        if ([int][char]$p.DriveLetter -ne 0) { return 'Data' }
+        $v = $p | Get-Volume -ErrorAction SilentlyContinue
+        if ($null -eq $v -or [string]::IsNullOrEmpty($v.FileSystem) -or $v.FileSystem -eq 'RAW') {
+          return 'Blank'
+        }
+        'Data'
+      }
+      # The partition after the OS partition plus, for an extended container,
+      # every logical partition inside it.
+      function Get-BlockingSet($DiskNumber, $First) {
+        $isExt = Test-Extended $First
+        if ($isExt) {
+          $end = $First.Offset + $First.Size
+          $members = @(Get-Partition -DiskNumber $DiskNumber | Where-Object {
+            -not (Test-Extended $_) -and $_.Offset -gt $First.Offset -and $_.Offset -lt $end
+          })
+        } else {
+          $members = @($First)
+        }
+        $items = @($members | ForEach-Object {
+          [PSCustomObject]@{ Partition = $_; Kind = (Get-PartKind $_) }
+        })
+        $recovery = @($items | Where-Object Kind -eq 'Recovery')
+        [PSCustomObject]@{
+          IsExtended  = $isExt
+          Items       = $items
+          # An empty extended container is itself blank and deletable
+          Deletable   = -not ($items | Where-Object Kind -eq 'Data')
+          HasRecovery = $recovery.Count -gt 0
+          RecoveryMB  = [math]::Round((($recovery | ForEach-Object { $_.Partition.Size }) | Measure-Object -Sum).Sum / 1MB)
+        }
+      }
+
 - name: Find the partition following {{ disk_drive_letter }}
   ansible.windows.win_powershell:
     parameters:
       DriveLetter: "{{ disk_drive_letter }}"
     script: |
       param($DriveLetter)
+      {{ disk_recovery_pslib }}
       $Ansible.Changed = $false
       $os = Get-Partition -DriveLetter $DriveLetter -ErrorAction Stop
       $next = Get-Partition -DiskNumber $os.DiskNumber |
@@ -20,18 +71,24 @@
       $winre = if ($m) { $m.Matches[0].Groups[1].Value } else { 'Unknown' }
 
       if ($null -eq $next) {
-        return [PSCustomObject]@{ Found = $false; IsRecovery = $false; WinREStatus = $winre }
+        return [PSCustomObject]@{ Found = $false; Deletable = $false; HasRecovery = $false; WinREStatus = $winre }
       }
 
+      $set = Get-BlockingSet $os.DiskNumber $next
       [PSCustomObject]@{
         Found           = $true
-        # GPT Recovery type GUID, or MBR partition type 0x27
-        IsRecovery      = ($next.GptType -eq '{de94bba4-06d1-4d40-a16a-bfd50179d6ac}') -or ($next.MbrType -eq 39)
+        IsExtended      = $set.IsExtended
+        Deletable       = $set.Deletable
+        HasRecovery     = $set.HasRecovery
+        RecoveryMB      = $set.RecoveryMB
         DiskNumber      = $next.DiskNumber
         PartitionNumber = $next.PartitionNumber
         Offset          = $next.Offset
         Type            = [string]$next.Type
         SizeMB          = [math]::Round($next.Size / 1MB)
+        Contents        = @($set.Items | ForEach-Object {
+          "partition $($_.Partition.PartitionNumber): $($_.Kind), $([math]::Round($_.Partition.Size / 1MB)) MB"
+        })
         WinREStatus     = $winre
       }
   register: disk_recovery_info
@@ -40,52 +97,76 @@
   ansible.builtin.set_fact:
     disk_recovery: "{{ disk_recovery_info.output[0] }}"
 
-- name: Fail if a non-recovery partition follows {{ disk_drive_letter }}
-  ansible.builtin.fail:
+- name: Show partitions following {{ disk_drive_letter }}
+  ansible.builtin.debug:
     msg: >-
-      Partition {{ disk_recovery.PartitionNumber }} ({{ disk_recovery.Type }}, {{ disk_recovery.SizeMB }} MB)
-      follows {{ disk_drive_letter }}: and is not a Recovery partition. Refusing to delete it;
-      {{ disk_drive_letter }}: cannot be extended until it is moved or removed manually.
-  when:
-    - disk_recovery.Found | bool
-    - not disk_recovery.IsRecovery | bool
+      {{ disk_recovery.Type }} partition ({{ disk_recovery.SizeMB }} MB) follows {{ disk_drive_letter }}:
+      {%- if disk_recovery.IsExtended | bool %}, containing:
+      {{ disk_recovery.Contents | join('; ') if disk_recovery.Contents else 'nothing (empty)' }}{% endif %}.
+      {{ 'Removing it.' if disk_recovery.Deletable | bool else
+         'It holds data, so it is left in place and the expansion continues.' }}
+  when: disk_recovery.Found | bool
 
-- name: Remove recovery partition {{ disk_recovery.PartitionNumber | default('') }}
+- name: Remove partitions blocking {{ disk_drive_letter }}
   when:
     - disk_recovery.Found | bool
-    - disk_recovery.IsRecovery | bool
+    - disk_recovery.Deletable | bool
   block:
     - name: Validate recovery partition size
       ansible.builtin.assert:
-        that: disk_recovery.SizeMB | int <= disk_recovery_max_mb | int
+        that: disk_recovery.RecoveryMB | int <= disk_recovery_max_mb | int
         fail_msg: >-
-          Recovery partition is {{ disk_recovery.SizeMB }} MB, larger than
+          Recovery partition is {{ disk_recovery.RecoveryMB }} MB, larger than
           disk_recovery_max_mb ({{ disk_recovery_max_mb }} MB). Refusing to delete it.
+      when: disk_recovery.HasRecovery | bool
 
     - name: Disable Windows RE
       ansible.windows.win_command: reagentc.exe /disable
-      when: disk_recovery.WinREStatus == 'Enabled'
+      when:
+        - disk_recovery.HasRecovery | bool
+        - disk_recovery.WinREStatus == 'Enabled'
 
-    - name: Delete recovery partition
+    - name: Delete recovery/blank partitions
       ansible.windows.win_powershell:
         parameters:
           DiskNumber: "{{ disk_recovery.DiskNumber }}"
           Offset: "{{ disk_recovery.Offset }}"
         script: |
           param([uint32]$DiskNumber, [uint64]$Offset)
-          # Re-select by offset and re-verify the type so a renumbered
-          # partition can never be deleted by mistake.
-          $p = Get-Partition -DiskNumber $DiskNumber | Where-Object { $_.Offset -eq $Offset }
-          if (-not $p) { throw "No partition at offset $Offset on disk $DiskNumber" }
-          if (-not (($p.GptType -eq '{de94bba4-06d1-4d40-a16a-bfd50179d6ac}') -or ($p.MbrType -eq 39))) {
-            throw "Partition $($p.PartitionNumber) at offset $Offset is no longer a Recovery partition"
+          {{ disk_recovery_pslib }}
+          function Get-At([uint64]$o) {
+            Get-Partition -DiskNumber $DiskNumber | Where-Object { $_.Offset -eq $o }
           }
-          Remove-Partition -DiskNumber $DiskNumber -PartitionNumber $p.PartitionNumber -Confirm:$false -ErrorAction Stop
+          # Re-select by offset and re-classify so a renumbered or changed
+          # partition can never be deleted by mistake.
+          $first = Get-At $Offset
+          if (-not $first) { throw "No partition at offset $Offset on disk $DiskNumber" }
+          $set = Get-BlockingSet $DiskNumber $first
+          if (-not $set.Deletable) {
+            throw "Partition at offset $Offset now contains data; refusing to delete it"
+          }
+
+          # Highest offset first so MBR logical partitions are not renumbered
+          # underneath us; re-fetch each one right before removing it.
+          $offsets = @($set.Items | ForEach-Object { $_.Partition.Offset } | Sort-Object -Descending)
+          foreach ($o in $offsets) {
+            $p = Get-At $o
+            if ($p) { $p | Remove-Partition -Confirm:$false -ErrorAction Stop }
+          }
+
+          # Windows may drop an emptied extended container automatically.
+          if ($set.IsExtended) {
+            $c = Get-At $Offset
+            if ($c) { $c | Remove-Partition -Confirm:$false -ErrorAction Stop }
+          }
+
+          if (Get-At $Offset) { throw "Partition at offset $Offset is still present after removal" }
           $Ansible.Changed = $true
 
     - name: Re-enable Windows RE on the OS volume
       ansible.windows.win_command: reagentc.exe /enable
       when:
+        - disk_recovery.HasRecovery | bool
         - disk_recovery.WinREStatus == 'Enabled'
         - disk_recovery_reenable_winre | bool
       register: disk_recovery_winre_enable
