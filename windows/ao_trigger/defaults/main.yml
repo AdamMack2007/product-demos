@@ -1,18 +1,18 @@
 webhook_url_base: "https://orchestrator.apps.mackdev.net"
 
-workflows:
-  win_cve_job:
-    url: "https://orchestrator.apps.mackdev.net/api/v1/webhooks/15735822-b025-4555-aaa9-d1c86ebde1dd"
-    vars:
-      host: "{{ ansible_eda.event.payload.host }}"    
-      cve_id: "{{ ansible_eda.event.payload.cve_id }}"
-      ritm: "{{ ansible_eda.event.payload.ritm }}"
-
-  win_disk_job:
-    url: "https://orchestrator.apps.mackdev.net/api/v1/webhooks/eda/dce2d552-2b2d-4e90-bd6b-6793b6b09a42"
-    vars:
-      event_status: "{{ ansible_eda.event.payload.event_status }}"
-      event_name: "{{ ansible_eda.event.payload.event_name }}"
-      disk: "{{ ansible_eda.event.payload.disk }}"
-      host: "{{ ansible_eda.event.payload.hostname }}"
-      alert_service: "Dynatrace"
+#workflows:
+#  win_cve_job:
+#    url: "https://orchestrator.apps.mackdev.net/api/v1/webhooks/15735822-b025-4555-aaa9-d1c86ebde1dd"
+#    vars:
+#      host: "{{ ansible_eda.event.payload.host }}"    
+#      cve_id: "{{ ansible_eda.event.payload.cve_id }}"
+#      ritm: "{{ ansible_eda.event.payload.ritm }}"
+#
+#  win_disk_job:
+#    url: "https://orchestrator.apps.mackdev.net/api/v1/webhooks/eda/dce2d552-2b2d-4e90-bd6b-6793b6b09a42"
+#    vars:
+#      event_status: "{{ ansible_eda.event.payload.event_status }}"
+#      event_name: "{{ ansible_eda.event.payload.event_name }}"
+#      disk: "{{ ansible_eda.event.payload.disk }}"
+#      host: "{{ ansible_eda.event.payload.hostname }}"
+#      alert_service: "Dynatrace"
