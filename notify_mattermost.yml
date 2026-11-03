@@ -8,4 +8,5 @@
         url: "{{ mattermost_url }}"
         api_key: "{{ mattermost_token }}"
         text: "{{ mattermost_message }}"
+        username: amack
         channel: "DevOps"
