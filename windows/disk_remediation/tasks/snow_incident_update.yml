@@ -9,7 +9,7 @@
 - name: Update ServiceNow incident {{ disk_incident_number }}
   when: disk_incident_number | length > 0
   servicenow.itsm.incident:
-    instance: "{{ disk_snow_instance }}"
+    instance: "{{ snow_instance }}"
     number: "{{ disk_incident_number }}"
     state: "{{ disk_snow_state | default('in_progress') }}"
     attachments: "{{ disk_snow_attachments | default(omit) }}"

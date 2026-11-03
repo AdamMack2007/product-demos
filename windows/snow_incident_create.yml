@@ -1,0 +1,9 @@
+- name: Create ServiceNow incident
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Include SNOW Incident Tasks
+      ansible.builtin.include_role:
+        name: disk_remediation
+        tasks_from: snow_incident_create.yml

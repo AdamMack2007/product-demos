@@ -6,7 +6,7 @@
 
 - name: Create ServiceNow incident
   servicenow.itsm.incident:
-    instance: "{{ disk_snow_instance }}"
+    instance: "{{ snow_instance }}"
     state: new
     caller: "{{ disk_snow_caller }}"
     impact: "{{ disk_snow_impact }}"

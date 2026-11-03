@@ -64,13 +64,12 @@ disk_expand_reboot_if_needed: true
 # Connection: snow_host (https://instance.service-now.com), snow_user and
 # snow_password, or SN_HOST / SN_USERNAME / SN_PASSWORD env vars from the
 # AAP ServiceNow credential type.
-disk_snow_instance:
-  host: "{{ snow_host | default(omit) }}"
-  username: "{{ snow_user | default(omit) }}"
-  password: "{{ snow_password | default(omit) }}"
-
-# Incident creation
-disk_snow_caller: admin
+snow_instance:
+  host: "{{ snow_host }}"
+  username: "{{ snow_user }}"
+  password: "{{ snow_password }}"
+  
+disk_snow_caller: amack
 disk_snow_impact: medium
 disk_snow_urgency: medium
 disk_snow_assignment_group: ""
