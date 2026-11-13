@@ -29,6 +29,7 @@
   tasks:    
     
     - name: Manage Linux VMs
+      when: linux_vm_state != 'continue'
       community.proxmox.proxmox:
         api_user: root@pam
         api_password: "{{ lookup('env', 'PROXMOX_PASSWORD') }}"
@@ -43,6 +44,7 @@
         label: "{{ item.name }}"
 
     - name: Manage Windows VMs
+      when: windows_vm_state != 'continue'
       community.proxmox.proxmox_kvm:
         api_user: root@pam
         api_password: "{{ lookup('env', 'PROXMOX_PASSWORD') }}"
